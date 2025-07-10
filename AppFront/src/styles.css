@@ -1,0 +1,43 @@
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body {
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+}
+
+html, body { height: 100%; }
+body { margin: 0; }
+
+.fc-toolbar .fc-button {
+  font-size: 0.75rem !important;
+  padding: 0.25rem 0.75rem !important;
+  border-radius: 0 !important;
+  min-width: 32px !important;
+  height: 32px !important;
+  margin: 0 4px !important;
+  box-shadow: none !important;
+}
+
+.fc-toolbar .fc-button-primary {
+  background: #221f1a !important;
+  color: #f6f2ea !important;
+  border: 1px solid #221f1a !important;
+  transition: opacity 0.2s ease !important;
+}
+
+.fc-toolbar .fc-button-primary:hover {
+  opacity: 0.85;
+}
+
+.fc-toolbar .fc-button-secondary {
+  background: transparent !important;
+  color: #221f1a !important;
+  border: 1px solid #ddd5c4 !important;
+  transition: border-color 0.2s ease !important;
+}
+
+.fc-toolbar .fc-button-secondary:hover {
+  border-color: #221f1a !important;
+}
