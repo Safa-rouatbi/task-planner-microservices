@@ -1,0 +1,10 @@
+
+::ng-deep .snackbar-success {
+  background-color: #221f1a;
+  color: #f6f2ea;
+}
+
+::ng-deep .snackbar-error {
+  background-color: #a15c3e;
+  color: #f6f2ea;
+}
