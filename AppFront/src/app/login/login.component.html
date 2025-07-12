@@ -1,0 +1,81 @@
+<form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="min-h-screen grid md:grid-cols-2 bg-paper">
+
+  <div class="hidden md:flex flex-col justify-between bg-charcoal text-paper p-12">
+    <div>
+      <span class="text-sm tracking-widest uppercase text-paper/50">TaskFlow</span>
+    </div>
+
+    <div class="max-w-sm">
+      <h1 class="text-4xl leading-tight font-serif">
+        Organiser le travail de l'équipe, sans se compliquer la vie.
+      </h1>
+      <p class="mt-4 text-paper/60">
+        Calendrier partagé, tâches assignées, tout au même endroit.
+      </p>
+    </div>
+
+    <p class="text-xs text-paper/40">Plateforme interne de gestion de tâches</p>
+  </div>
+
+  <div class="flex items-center justify-center p-8">
+    <div class="w-full max-w-sm">
+      <h2 class="text-2xl text-ink mb-1">Connexion</h2>
+      <p class="text-muted text-sm mb-8">Entrez vos identifiants pour accéder à votre espace.</p>
+
+      <div class="mb-5">
+        <label class="block text-sm text-ink mb-1" for="mail">E-mail</label>
+
+        <input
+          id="mail"
+          class="w-full bg-transparent border-b border-line py-2 text-ink focus:outline-none focus:border-accent transition-colors"
+          type="text"
+          placeholder="vous@exemple.com"
+          formControlName="mail"
+        />
+      </div>
+
+      <div class="mb-6">
+        <label class="block text-sm text-ink mb-1" for="motdepasse">Mot de passe</label>
+        <input
+          id="motdepasse"
+          class="w-full bg-transparent border-b border-line py-2 text-ink focus:outline-none focus:border-accent transition-colors"
+          type="password"
+          placeholder="••••••••"
+          formControlName="motdepasse"
+        />
+      </div>
+
+      @if (loginForm.invalid && (loginForm.dirty || loginForm.touched)) {
+        <div class="text-accent text-sm mb-4 space-y-1">
+          @if (loginForm.controls['mail'].errors) {
+            @if (loginForm.controls['mail'].errors['required']) {
+              <p>Email requis.</p>
+            }
+            @if (loginForm.controls['mail'].errors['email']) {
+              <p>Format de l'email invalide.</p>
+            }
+          }
+          @if (loginForm.controls['motdepasse'].errors) {
+            @if (loginForm.controls['motdepasse'].errors['required']) {
+              <p>Mot de passe requis.</p>
+            }
+            @if (loginForm.controls['motdepasse'].errors['minlength']) {
+              <p>Mot de passe trop court (min. 6 caractères).</p>
+            }
+          }
+        </div>
+      }
+
+      @if (errorMessage) {
+        <div class="text-accent text-sm mb-4">{{ errorMessage }}</div>
+      }
+
+      <button
+        type="submit"
+        class="w-full bg-ink text-paper py-3 hover:bg-charcoal transition-colors"
+      >
+        Se connecter
+      </button>
+    </div>
+  </div>
+</form>
