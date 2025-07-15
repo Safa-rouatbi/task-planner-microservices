@@ -4,7 +4,6 @@ import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -25,7 +24,7 @@ public class Service {
     private String nomService;
 
     @JsonManagedReference
-    @OneToMany(mappedBy = "service", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "service", fetch = FetchType.LAZY)
     private List<Compte> comptes;
 
         public Long getId() {
