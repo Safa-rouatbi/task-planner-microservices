@@ -1,0 +1,154 @@
+<div class="min-h-screen bg-paper flex">
+
+  @if (layout.sidebarVisible) {
+    <aside class="w-60 shrink-0 border-r border-line flex flex-col justify-between min-h-screen">
+      <div>
+        <div class="p-6 border-b border-line">
+          <span class="text-sm tracking-widest uppercase text-muted">TaskFlow</span>
+        </div>
+
+        <nav class="p-4 flex flex-col gap-1 text-sm">
+          <a (click)="navigatetocalnder()" class="px-3 py-2 text-ink hover:bg-line/40 cursor-pointer">Calendrier</a>
+          <span class="px-3 py-2 bg-ink text-paper">Équipe</span>
+          <a (click)="navigatetotache()" class="px-3 py-2 text-ink hover:bg-line/40 cursor-pointer">Tâches</a>
+          <a (click)="navigatetoservice()" class="px-3 py-2 text-ink hover:bg-line/40 cursor-pointer">Gestion services</a>
+        </nav>
+
+        <div class="p-4 flex flex-col gap-2 border-t border-line">
+          <button (click)="openModal()" class="w-full border border-ink text-ink py-2 text-sm hover:bg-ink hover:text-paper transition-colors">
+            Ajouter un compte
+          </button>
+          <button (click)="telechargerCSV()" class="w-full border border-line text-muted py-2 text-sm hover:border-ink hover:text-ink transition-colors">
+            Télécharger en CSV
+          </button>
+        </div>
+      </div>
+
+      <app-sidebar-footer [userPrenom]="userPrenom" [userNom]="userNom" />
+    </aside>
+  }
+
+  <div class="flex-1 min-h-screen min-w-0">
+
+    <div class="border-b border-line px-8 py-5 flex items-center justify-between gap-4">
+      <div>
+        <h1 class="text-xl text-ink">Équipe</h1>
+        <p class="text-muted text-sm mt-0.5">Comptes agents et administrateurs.</p>
+      </div>
+
+      <button (click)="layout.toggleSidebar()" class="border border-line p-2 hover:border-ink transition-colors" aria-label="Masquer la navigation">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M2 4h12M2 8h12M2 12h12" />
+        </svg>
+      </button>
+    </div>
+
+    @if (isChargement) {
+      <p class="px-8 py-4 text-sm text-muted">Chargement...</p>
+    }
+
+    <div class="px-8 py-6 border-b border-line grid grid-cols-1 md:grid-cols-2 gap-4">
+      <input
+        type="text"
+        placeholder="Rechercher un utilisateur (nom, prénom, email)..."
+        [(ngModel)]="searchTerm"
+        class="w-full border border-line px-3 py-2 text-sm text-ink bg-paper focus:outline-none focus:border-accent"
+      >
+
+      <select
+        [(ngModel)]="selectedServiceFilter"
+        (ngModelChange)="selectedServiceFilter = $event === '' ? '' : +$event"
+        class="w-full border border-line px-3 py-2 text-sm text-ink bg-paper focus:outline-none focus:border-accent"
+      >
+        <option value="">Tous les services</option>
+        @for (service of services; track service.id) {
+          <option [value]="service.id">{{ service.nomService }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="px-8 py-6">
+      <div class="border border-line overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead class="border-b border-line">
+            <tr class="text-left text-muted">
+              <th class="px-4 py-3 font-medium">Nom</th>
+              <th class="px-4 py-3 font-medium">Prénom</th>
+              <th class="px-4 py-3 font-medium">Email</th>
+              <th class="px-4 py-3 font-medium">Rôle</th>
+              <th class="px-4 py-3 font-medium">Service</th>
+              <th class="px-4 py-3 font-medium">Statut</th>
+              <th class="px-4 py-3 font-medium">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (user of filteredUsers; track user.id) {
+              <tr class="border-b border-line last:border-0 hover:bg-line/20">
+                <td class="px-4 py-3 text-ink">{{ user.nom }}</td>
+                <td class="px-4 py-3 text-ink">{{ user.prenom }}</td>
+                <td class="px-4 py-3 text-muted">{{ user.mail }}</td>
+                <td class="px-4 py-3 text-ink">{{ user.role }}</td>
+                <td class="px-4 py-3 text-muted">{{ getServiceName(user.serviceId) }}</td>
+                <td class="px-4 py-3">
+                  <span [class.text-accent]="!user.actif" class="text-ink">
+                    {{ user.actif ? 'Actif' : 'Inactif' }}
+                  </span>
+                </td>
+                <td class="px-4 py-3">
+                  <div class="flex flex-wrap gap-3">
+                    <button (click)="edit(user)" class="text-ink hover:text-accent underline underline-offset-2">Modifier</button>
+                    @if (user.id !== undefined) {
+                      <button (click)="delete(user.id!)" class="text-muted hover:text-accent underline underline-offset-2">Supprimer</button>
+                    }
+                    @if (user.actif) {
+                      <button (click)="desactiver(user.id!)" class="text-muted hover:text-accent underline underline-offset-2">Désactiver</button>
+                    }
+                    @if (!user.actif) {
+                      <button (click)="activer(user.id!)" class="text-muted hover:text-accent underline underline-offset-2">Activer</button>
+                    }
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  @if (modalOpen) {
+    <div class="fixed inset-0 bg-ink/40 z-50 flex items-center justify-center p-4">
+      <div class="bg-paper border border-line max-w-lg w-full p-8 max-h-[90vh] overflow-y-auto">
+
+        <h2 class="text-lg text-ink mb-6">{{ form.get('id')?.value ? 'Modifier' : 'Ajouter' }} un utilisateur</h2>
+
+        <form [formGroup]="form" (ngSubmit)="submit()" class="space-y-4">
+          <input formControlName="nom" placeholder="Nom" class="w-full border border-line px-3 py-2 text-sm bg-paper focus:outline-none focus:border-accent">
+          <input formControlName="prenom" placeholder="Prénom" class="w-full border border-line px-3 py-2 text-sm bg-paper focus:outline-none focus:border-accent">
+          <input formControlName="mail" placeholder="Email" class="w-full border border-line px-3 py-2 text-sm bg-paper focus:outline-none focus:border-accent">
+          <input formControlName="motdepasse" placeholder="Mot de passe" class="w-full border border-line px-3 py-2 text-sm bg-paper focus:outline-none focus:border-accent">
+
+          <select formControlName="role" class="w-full border border-line px-3 py-2 text-sm bg-paper focus:outline-none focus:border-accent">
+            <option value="USER">Agent</option>
+            <option value="ADMIN">Administrateur</option>
+          </select>
+
+          <div>
+            <label class="block text-sm text-ink mb-1">Service</label>
+            <select formControlName="serviceId" class="w-full border border-line px-3 py-2 text-sm bg-paper focus:outline-none focus:border-accent">
+              <option value="">Aucun</option>
+              @for (service of services; track service.id) {
+                <option [value]="service.id">{{ service.nomService }}</option>
+              }
+            </select>
+          </div>
+
+          <div class="flex justify-end gap-3 pt-4">
+            <button type="button" (click)="modalOpen = false" class="border border-line px-5 py-2 text-sm text-muted hover:text-ink hover:border-ink transition-colors">Annuler</button>
+            <button type="submit" class="bg-ink text-paper px-5 py-2 text-sm hover:bg-charcoal transition-colors">Enregistrer</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+</div>

@@ -1,0 +1,103 @@
+<div class="min-h-screen bg-paper flex">
+
+  @if (layout.sidebarVisible) {
+    <aside class="w-60 shrink-0 border-r border-line flex flex-col justify-between min-h-screen">
+      <div>
+        <div class="p-6 border-b border-line">
+          <span class="text-sm tracking-widest uppercase text-muted">TaskFlow</span>
+        </div>
+
+        <nav class="p-4 flex flex-col gap-1 text-sm">
+          <a (click)="navigatetocalnder()" class="px-3 py-2 text-ink hover:bg-line/40 cursor-pointer">Calendrier</a>
+          <a (click)="navigatetouser()" class="px-3 py-2 text-ink hover:bg-line/40 cursor-pointer">Équipe</a>
+          <a (click)="navigatetotache()" class="px-3 py-2 text-ink hover:bg-line/40 cursor-pointer">Tâches</a>
+          <span class="px-3 py-2 bg-ink text-paper">Gestion services</span>
+        </nav>
+      </div>
+
+      <app-sidebar-footer [userPrenom]="userPrenom" [userNom]="userNom" />
+    </aside>
+  }
+
+  <div class="flex-1 min-h-screen min-w-0">
+
+    <div class="border-b border-line px-8 py-5 flex items-center justify-between gap-4">
+      <div>
+        <h1 class="text-xl text-ink">Gestion des services</h1>
+        <p class="text-muted text-sm mt-0.5">Créer, renommer ou supprimer les services de l'organisation.</p>
+      </div>
+
+      <button (click)="layout.toggleSidebar()" class="border border-line p-2 hover:border-ink transition-colors" aria-label="Masquer la navigation">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M2 4h12M2 8h12M2 12h12" />
+        </svg>
+      </button>
+    </div>
+
+    <div class="px-8 py-6 max-w-2xl">
+
+      <form (ngSubmit)="save()" class="border border-line p-6 mb-8">
+        <h2 class="text-sm text-muted uppercase tracking-wide mb-4">{{ editing ? 'Modifier' : 'Ajouter' }} un service</h2>
+
+        <div class="mb-4">
+          <label class="block text-sm text-ink mb-1">Nom du service</label>
+          <input
+            type="text"
+            [(ngModel)]="service.nomService"
+            name="nomService"
+            placeholder="Tapez le nom du service"
+            required
+            class="w-full border border-line px-3 py-2 text-sm bg-paper focus:outline-none focus:border-accent"
+          />
+        </div>
+
+        <div class="flex gap-3 justify-end">
+          @if (editing) {
+            <button type="button" (click)="cancel()" class="border border-line px-5 py-2 text-sm text-muted hover:text-ink hover:border-ink transition-colors">
+              Annuler
+            </button>
+          }
+          <button type="submit" class="bg-ink text-paper px-5 py-2 text-sm hover:bg-charcoal transition-colors">
+            {{ editing ? 'Mettre à jour' : 'Ajouter' }}
+          </button>
+        </div>
+      </form>
+
+      <h2 class="text-sm text-muted uppercase tracking-wide mb-3">Liste des services</h2>
+
+      @if (loading) {
+        <p class="text-sm text-muted">Chargement en cours...</p>
+      }
+
+      @if (!loading) {
+        <table class="w-full text-sm border border-line">
+          <thead class="border-b border-line">
+            <tr class="text-left text-muted">
+              <th class="px-4 py-3 font-medium">ID</th>
+              <th class="px-4 py-3 font-medium">Nom du service</th>
+              <th class="px-4 py-3 font-medium">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (s of services; track s.id) {
+              <tr class="border-b border-line last:border-0 hover:bg-line/20">
+                <td class="px-4 py-3 text-muted">{{ s.id }}</td>
+                <td class="px-4 py-3 text-ink">{{ s.nomService }}</td>
+                <td class="px-4 py-3">
+                  <div class="flex gap-3">
+                    <button (click)="edit(s)" class="text-ink hover:text-accent underline underline-offset-2">Modifier</button>
+                    <button (click)="delete(s.id!, s.nomService)" class="text-muted hover:text-accent underline underline-offset-2">Supprimer</button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+
+        @if (services.length === 0) {
+          <p class="text-center py-8 text-sm text-muted">Aucun service trouvé.</p>
+        }
+      }
+    </div>
+  </div>
+</div>
