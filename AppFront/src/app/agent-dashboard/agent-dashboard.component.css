@@ -1,0 +1,55 @@
+
+::ng-deep .snackbar-success {
+  background-color: #221f1a;
+  color: #f6f2ea;
+}
+
+::ng-deep .snackbar-error {
+  background-color: #a15c3e;
+  color: #f6f2ea;
+}
+
+:host ::ng-deep .fc-event.conflict {
+  background-color: #f87171 !important;
+  border-color: #ef4444 !important;
+}
+
+.calendar-wrapper-inner {
+  min-width: 1800px;
+  display: inline-block;
+}
+
+::ng-deep .fc-resource-cell,
+::ng-deep .fc-col-header-cell,
+::ng-deep .fc-timegrid-col {
+  min-width: 160px !important;
+  text-align: center;
+}
+
+::ng-deep .fc {
+  --fc-border-color: #ddd5c4;
+  --fc-today-bg-color: #f1ece0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+::ng-deep .fc-toolbar-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #221f1a;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #ddd5c4;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #a15c3e;
+}
