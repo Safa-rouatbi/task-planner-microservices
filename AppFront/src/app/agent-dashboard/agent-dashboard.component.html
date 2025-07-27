@@ -1,0 +1,161 @@
+<div class="min-h-screen bg-paper flex">
+
+  @if (layout.sidebarVisible) {
+    <aside class="w-60 shrink-0 border-r border-line flex flex-col justify-between min-h-screen">
+      <div>
+        <div class="p-6 border-b border-line">
+          <span class="text-sm tracking-widest uppercase text-muted">TaskFlow</span>
+        </div>
+
+        <nav class="p-4 flex flex-col gap-1 text-sm">
+          <span class="px-3 py-2 bg-ink text-paper">Mon calendrier</span>
+          <a (click)="navigatetotache()" class="px-3 py-2 text-ink hover:bg-line/40 cursor-pointer">Mes tâches</a>
+
+          <a (click)="toggleAfficher()" class="px-3 py-2 text-ink hover:bg-line/40 cursor-pointer">
+            {{ afficherToutesTaches ? 'Voir mes tâches' : 'Voir toutes les tâches' }}
+          </a>
+        </nav>
+
+        <div class="p-4 flex flex-col gap-2 border-t border-line">
+          <button (click)="ouvrirModal()" class="w-full border border-ink text-ink py-2 text-sm hover:bg-ink hover:text-paper transition-colors">
+            Nouvelle tâche
+          </button>
+          <button (click)="exporterExcel()" class="w-full border border-line text-muted py-2 text-sm hover:border-ink hover:text-ink transition-colors">
+            Exporter en Excel
+          </button>
+        </div>
+      </div>
+
+      <app-sidebar-footer [userPrenom]="userPrenom" [userNom]="userNom" />
+    </aside>
+  }
+
+  <div class="flex-1 min-h-screen min-w-0">
+
+    <div class="border-b border-line px-8 py-5 flex items-center justify-between gap-4">
+      <div>
+        <h1 class="text-xl text-ink">Mon calendrier</h1>
+        <p class="text-muted text-sm mt-0.5">Vos tâches, jour par jour.</p>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <select [(ngModel)]="filtres.serviceId" class="border border-line px-3 py-2 text-sm text-ink bg-paper focus:outline-none focus:border-accent">
+          <option value="">Tous les services</option>
+          @for (service of services; track service.id) {
+            <option [value]="service.id">{{ service.nomService }}</option>
+          }
+        </select>
+
+        @if (filtres.serviceId) {
+          <button (click)="chargerTachesParService()" class="border border-ink px-3 py-2 text-sm text-ink hover:bg-ink hover:text-paper transition-colors">
+            Charger
+          </button>
+        }
+
+        <button (click)="layout.toggleSidebar()" class="border border-line p-2 hover:border-ink transition-colors" aria-label="Masquer la navigation">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M2 4h12M2 8h12M2 12h12" />
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="px-8 py-6 border-b border-line">
+      <h3 class="text-sm text-muted uppercase tracking-wide mb-3">Filtres</h3>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        <div>
+          <label class="block text-xs text-muted mb-1">Priorité</label>
+          <select [(ngModel)]="filtres.priorite" class="w-full border border-line px-3 py-2 text-sm text-ink bg-paper focus:outline-none focus:border-accent">
+            <option value="">Toutes</option>
+            <option value="FAIBLE">Faible</option>
+            <option value="MOYENNE">Moyenne</option>
+            <option value="HAUTE">Haute</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs text-muted mb-1">Date début</label>
+          <input type="date" [(ngModel)]="filtres.dateDebutStart" (input)="appliquerFiltres()" class="w-full border border-line px-3 py-2 text-sm text-ink bg-paper focus:outline-none focus:border-accent">
+        </div>
+
+        <div>
+          <label class="block text-xs text-muted mb-1">Date fin</label>
+          <input type="date" [(ngModel)]="filtres.dateDebutEnd" (input)="appliquerFiltres()" class="w-full border border-line px-3 py-2 text-sm text-ink bg-paper focus:outline-none focus:border-accent">
+        </div>
+      </div>
+
+      <div class="flex gap-3">
+        <button (click)="appliquerFiltres()" class="px-4 py-2 text-sm bg-ink text-paper hover:bg-charcoal transition-colors">Filtrer</button>
+        <button (click)="reinitialiserFiltres()" class="px-4 py-2 text-sm border border-line text-muted hover:text-ink hover:border-ink transition-colors">Réinitialiser</button>
+      </div>
+    </div>
+
+    <div class="px-8 py-6">
+      <div #calendarScroll class="border border-line overflow-x-auto min-h-[600px]">
+        <div class="calendar-wrapper-inner min-w-max">
+          <full-calendar [options]="calendarOptions"></full-calendar>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  @if (modalOuvert) {
+    <div class="fixed inset-0 bg-ink/40 z-50 flex items-center justify-center p-4">
+      <div class="bg-paper border border-line max-w-lg w-full p-8 max-h-[90vh] overflow-y-auto">
+
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-lg text-ink">Nouvelle tâche</h2>
+          <button (click)="fermerModal()" class="text-muted hover:text-ink">Fermer</button>
+        </div>
+
+        <form (ngSubmit)="ajouterTache()" class="space-y-4">
+          <div>
+            <label class="block text-sm text-ink mb-1">Titre</label>
+            <input type="text" [(ngModel)]="nouvelleTache.titre" name="titre" required class="w-full border border-line px-3 py-2 text-sm bg-paper focus:outline-none focus:border-accent">
+          </div>
+
+          <div>
+            <label class="block text-sm text-ink mb-1">Description</label>
+            <textarea [(ngModel)]="nouvelleTache.description" name="description" rows="3" class="w-full border border-line px-3 py-2 text-sm bg-paper focus:outline-none focus:border-accent resize-none"></textarea>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm text-ink mb-1">Date de début</label>
+              <input type="datetime-local" [(ngModel)]="nouvelleTache.dateDebut" name="dateDebut" required class="w-full border border-line px-3 py-2 text-sm bg-paper focus:outline-none focus:border-accent">
+            </div>
+            <div>
+              <label class="block text-sm text-ink mb-1">Durée (h)</label>
+              <input type="number" [(ngModel)]="nouvelleTache.dureeEnHeures" name="dureeEnHeures" required class="w-full border border-line px-3 py-2 text-sm bg-paper focus:outline-none focus:border-accent">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm text-ink mb-1">Priorité</label>
+            <select [(ngModel)]="nouvelleTache.priorite" name="priorite" required class="w-full border border-line px-3 py-2 text-sm bg-paper focus:outline-none focus:border-accent">
+              <option value="FAIBLE">Faible</option>
+              <option value="MOYENNE">Moyenne</option>
+              <option value="HAUTE">Haute</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm text-ink mb-1">Service</label>
+            <select [(ngModel)]="nouvelleTache.serviceId" name="serviceId" class="w-full border border-line px-3 py-2 text-sm bg-paper focus:outline-none focus:border-accent">
+              <option [value]="null">Aucun</option>
+              @for (service of services; track service.id) {
+                <option [value]="service.id">{{ service.nomService }}</option>
+              }
+            </select>
+          </div>
+
+          <div class="flex justify-end gap-3 pt-4">
+            <button type="button" (click)="fermerModal()" class="border border-line px-5 py-2 text-sm text-muted hover:text-ink hover:border-ink transition-colors">Annuler</button>
+            <button type="submit" class="bg-ink text-paper px-5 py-2 text-sm hover:bg-charcoal transition-colors">Ajouter</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+</div>

@@ -1,0 +1,98 @@
+
+::ng-deep .snackbar-success {
+  background-color: #221f1a;
+  color: #f6f2ea;
+}
+
+::ng-deep .snackbar-error {
+  background-color: #a15c3e;
+  color: #f6f2ea;
+}
+
+:host ::ng-deep .fc-event.conflict {
+  background-color: #f87171 !important;
+  border-color: #ef4444 !important;
+}
+
+.calendar-wrapper-outer {
+  overflow-x: auto;
+  width: 100%;
+}
+
+.calendar-wrapper-inner {
+  min-width: 1800px;
+  display: inline-block;
+}
+
+::ng-deep .fc-resource-cell,
+::ng-deep .fc-col-header-cell,
+::ng-deep .fc-timegrid-col {
+  min-width: 160px !important;
+  text-align: center;
+}
+
+::ng-deep .fc-scrollgrid {
+  min-width: 1200px;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #ddd5c4;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #a15c3e;
+}
+
+::ng-deep .fc {
+  --fc-border-color: #ddd5c4;
+  --fc-today-bg-color: #f1ece0;
+  font-family: inherit;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+::ng-deep .fc-toolbar-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #221f1a;
+}
+
+::ng-deep .fc-resource-area-header {
+  background: transparent;
+  color: #221f1a;
+  font-weight: 600;
+  padding: 10px;
+  border-bottom: 1px solid #ddd5c4;
+}
+
+::ng-deep .fc-col-header-cell {
+  background: transparent;
+  border-bottom: 1px solid #ddd5c4;
+}
+
+::ng-deep .fc-col-header-cell-cushion {
+  font-weight: 600;
+  color: #221f1a;
+  font-size: 0.85rem;
+  text-transform: capitalize;
+}
+
+::ng-deep .fc-timeline-now-indicator-line {
+  background: #a15c3e !important;
+}
+
+::ng-deep .fc-event {
+  border: none !important;
+  transition: transform 0.15s ease;
+}
+
+::ng-deep .fc-event:hover {
+  transform: translateY(-1px);
+}
