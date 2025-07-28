@@ -1,6 +1,7 @@
 package com.example.task_service.controller;
 
 import com.example.task_service.dto.CompteDTO;
+import com.example.task_service.dto.StatistiquesDTO;
 import com.example.task_service.dto.TacheDTO;
 import com.example.task_service.mapper.TacheMapper;
 import com.example.task_service.model.Tache;
@@ -134,6 +135,14 @@ public ResponseEntity<List<TacheDTO>> getTachesFiltres(
             return ResponseEntity.ok().build();
         }).orElse(ResponseEntity.notFound().build());
     }
+
+@GetMapping("/stats")
+public ResponseEntity<StatistiquesDTO> getStatistiques(@RequestAttribute("role") String role) {
+    if (!role.equals("ADMIN")) {
+        return ResponseEntity.status(403).body(null);
+    }
+    return ResponseEntity.ok(tacheService.getStatistiques());
+}
 
 @GetMapping("/par-service")
 public ResponseEntity<List<TacheDTO>> getTachesParService(
