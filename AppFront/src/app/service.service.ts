@@ -2,12 +2,13 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Service } from './model/service.model';
 import { Observable } from 'rxjs';
+import { environment } from '../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ServiceService {
-  private apiUrl = 'http://localhost:8080/api/users/services';
+  private apiUrl = `${environment.gatewayApiUrl}/api/users/services`;
 
   constructor(private http: HttpClient) { }
 

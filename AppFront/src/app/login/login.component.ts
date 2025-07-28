@@ -1,7 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import{FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
 import { AuthService } from '../auth.service';
-import { jwtDecode } from 'jwt-decode';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 
@@ -33,10 +32,9 @@ export class LoginComponent implements OnInit {
     this.authService.login({mail, motdepasse}).subscribe({
       next: (response: any)=>{
         const token= response.token;
-        localStorage.setItem('token', token);
+        this.authService.saveToken(token);
 
-        const decoded: any = jwtDecode(token);
-        const role = decoded.role;
+        const role = this.authService.getUserRole();
 
          if (role === 'ADMIN') {
           this.router.navigate(['/calendrier']);

@@ -1,9 +1,22 @@
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { Tache } from './model/Tache';
+import { environment } from '../environments/environment';
 
 export type { Tache };
+
+export interface Statistiques {
+  chargeParAgent: { [agentId: string]: number };
+  parPriorite: { [priorite: string]: number };
+  parService: { [serviceId: string]: number };
+  nombreEnRetard: number;
+  totalTaches: number;
+  tachesEnRetard: { titre: string; agentId: number | null; heuresRetard: number }[];
+  totalActives: number;
+  tachesNonAssignees: number;
+  tachesSansService: number;
+}
 
 export interface ParamsFiltreTaches {
   serviceId?: number;
@@ -37,89 +50,62 @@ export function buildParamsFiltreTaches(filtres: FiltresTaches, mesTaches = fals
   providedIn: 'root'
 })
 export class TaskService {
-private baseUrl = 'http://localhost:8083/taches';
+  private baseUrl = `${environment.taskApiUrl}/taches`;
 
- constructor(private http: HttpClient) { }
+  constructor(private http: HttpClient) { }
 
- private getAuthHeaders(): HttpHeaders {
-  const token = localStorage.getItem('token');
-  return new HttpHeaders({ Authorization: `Bearer ${token}` });
-}
+  // Pas besoin d'ajouter le token ici car uthInterceptor le fait deja
 
   getTaches(): Observable<Tache[]> {
-    const token = localStorage.getItem('token');
-    const headers = new HttpHeaders({
-      'Authorization': `Bearer ${token}`
-    });
-    return this.http.get<Tache[]>(this.baseUrl, { headers });
+    return this.http.get<Tache[]>(this.baseUrl);
   }
+
   getMesTaches(): Observable<Tache[]> {
-  return this.http.get<Tache[]>('http://localhost:8083/taches/mes-taches', {
-    headers: this.getAuthHeaders()
-  });
-}
+    return this.http.get<Tache[]>(`${this.baseUrl}/mes-taches`);
+  }
 
-  ajouterTache(tache: any): Observable<any> {
-  const token = localStorage.getItem('token');
+  ajouterTache(tache: Tache): Observable<Tache> {
+    return this.http.post<Tache>(this.baseUrl, tache);
+  }
 
-  const headers = new HttpHeaders({
-    'Authorization': `Bearer ${token}`
-  });
+  updateTache(tache: Tache): Observable<Tache> {
+    const tacheModifiee = {
+      ...tache,
+      dateDebut: new Date(tache.dateDebut).toISOString()
+    };
 
-  return this.http.post<any>(this.baseUrl, tache, { headers });
-}
-updateTache(tache: Tache): Observable<any> {
-  const tacheModifiee = {
-    ...tache,
-    dateDebut: new Date(tache.dateDebut).toISOString()
-  };
+    return this.http.put<Tache>(`${this.baseUrl}/${tache.id}`, tacheModifiee);
+  }
 
-  return this.http.put<any>(
-    `${this.baseUrl}/${tache.id}`,
-    tacheModifiee,
-    { headers: this.getAuthHeaders() }
-  );
-}
+  deleteTache(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/${id}`);
+  }
 
-deleteTache(id: number): Observable<void> {
-  return this.http.delete<void>(`${this.baseUrl}/${id}`, { headers: this.getAuthHeaders() });
-}
+  getTachesFiltres(params: ParamsFiltreTaches): Observable<Tache[]> {
+    let httpParams = new HttpParams();
+    if (params.serviceId) httpParams = httpParams.set('serviceId', params.serviceId);
+    if (params.agentId) httpParams = httpParams.set('agentId', params.agentId);
+    if (params.priorite) httpParams = httpParams.set('priorite', params.priorite);
+    if (params.start) httpParams = httpParams.set('start', params.start);
+    if (params.end) httpParams = httpParams.set('end', params.end);
+    if (params.mesTaches) httpParams = httpParams.set('mesTaches', params.mesTaches);
 
-getTachesFiltres(params: ParamsFiltreTaches): Observable<Tache[]> {
-  const token = localStorage.getItem('token');
-  const headers = new HttpHeaders({
-    'Authorization': `Bearer ${token}`
-  });
+    return this.http.get<Tache[]>(`${this.baseUrl}/filtre`, { params: httpParams });
+  }
 
-  let queryParams = new URLSearchParams();
-  if (params.serviceId) queryParams.set('serviceId', params.serviceId.toString());
-  if (params.agentId) queryParams.set('agentId', params.agentId);
-  if (params.priorite) queryParams.set('priorite', params.priorite);
-  if (params.start) queryParams.set('start', params.start);
-  if (params.end) queryParams.set('end', params.end);
-  if (params.mesTaches) queryParams.set('mesTaches', params.mesTaches);
-  const url = `${this.baseUrl}/filtre?${queryParams.toString()}`;
+  getTachesParService(serviceId: number): Observable<Tache[]> {
+    return this.http.get<Tache[]>(`${this.baseUrl}/par-service`, {
+      params: { serviceId }
+    });
+  }
 
-  return this.http.get<Tache[]>(url, { headers });
-}
+  getStatistiques(): Observable<Statistiques> {
+    return this.http.get<Statistiques>(`${this.baseUrl}/stats`);
+  }
 
-getTachesParService(serviceId: number): Observable<Tache[]> {
-  return this.http.get<Tache[]>(`${this.baseUrl}/par-service`, {
-    params: { serviceId },
-    headers: this.getAuthHeaders()
-  });
-}
-
-exporterTachesExcel(): Observable<Blob> {
-  const headers = new HttpHeaders({
-    Authorization: `Bearer ${localStorage.getItem('token')}`,
-    'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-  });
-
-  return this.http.get('http://localhost:8083/export/taches.xlsx', {
-    headers,
-    responseType: 'blob'
-  });
-}
-
+  exporterTachesExcel(): Observable<Blob> {
+    return this.http.get(`${environment.taskApiUrl}/export/taches.xlsx`, {
+      responseType: 'blob'
+    });
+  }
 }
