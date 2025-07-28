@@ -7,7 +7,7 @@ import { TaskService, Statistiques } from '../task.service';
 import { UserService, Compte } from '../user.service';
 import { ServiceService } from '../service.service';
 import { Service } from '../model/service.model';
-import { buildCalendarEvents, checkForConflicts } from '../calendar-events.util';
+import { buildCalendarEvents, checkForConflicts, computeEndDate } from '../calendar-events.util';
 import { LayoutService } from '../layout.service';
 import { NotificationService } from '../notification.service';
 import { SidebarFooterComponent } from '../shared/sidebar-footer/sidebar-footer.component';
@@ -49,8 +49,7 @@ export class DashboardManagerComponent implements OnInit {
   users: Compte[] = [];
   services: Service[] = [];
 
-  // Chart.js a besoin d'un vrai canvas : cote serveur (SSR) il n'existe pas et
-  // la directive plante. On n'affiche les graphiques que dans le navigateur.
+  // Chart.js a besoin d'un vrai canvas cote serveur SSR il n'existe pas on n'affiche les graphiques que dans le navigateur.
   estNavigateur = false;
 
   constructor(
@@ -108,10 +107,12 @@ export class DashboardManagerComponent implements OnInit {
         const maintenant = new Date();
         const dans14Jours = new Date(maintenant.getTime() + 14 * 24 * 60 * 60 * 1000);
 
+       
         const tachesActives = taches.filter(t => {
           if (t.etat === 'Terminée') return false;
           const debut = new Date(t.dateDebut);
-          return debut >= maintenant && debut <= dans14Jours;
+          const fin = new Date(computeEndDate(t.dateDebut, t.dureeEnHeures));
+          return fin >= maintenant && debut <= dans14Jours;
         });
 
         const events = buildCalendarEvents(tachesActives);
@@ -136,8 +137,7 @@ export class DashboardManagerComponent implements OnInit {
     this.nombreEnRetard = stats.nombreEnRetard;
     this.tachesNonAssignees = stats.tachesNonAssignees;
 
-    // On rapporte les retards aux taches actives : sur le total historique, le
-    // pourcentage baisserait tout seul a mesure que les taches terminees s'accumulent.
+   
     this.pourcentageEnRetard = stats.totalActives > 0
       ? Math.round((stats.nombreEnRetard / stats.totalActives) * 100)
       : 0;
@@ -162,8 +162,7 @@ export class DashboardManagerComponent implements OnInit {
       datasets: [{ data: Object.values(stats.parPriorite), backgroundColor: ['#a15c3e', '#7c4730', '#ddd5c4'] }]
     };
 
-    // Les taches sans service sont ajoutees en fin de graphique, sinon le total
-    // des barres ne retombe pas sur le nombre de taches actives affiche plus haut.
+   
     const labelsService = Object.keys(stats.parService).map(id => this.getNomService(+id));
     const valeursService = Object.values(stats.parService);
     if (stats.tachesSansService > 0) {
@@ -176,8 +175,7 @@ export class DashboardManagerComponent implements OnInit {
       datasets: [{ data: valeursService, label: 'Tâches', backgroundColor: '#221f1a' }]
     };
 
-    // Le retard est repris dans le libelle : une tache en retard de quelques heures
-    // donne une barre quasi invisible, et on ne saurait pas de combien elle est en retard.
+
     this.tachesEnRetardData = {
       labels: stats.tachesEnRetard.map(
         t => `${t.titre} (${this.getNomAgentCourt(t.agentId)}) — ${this.formatRetard(t.heuresRetard)}`
