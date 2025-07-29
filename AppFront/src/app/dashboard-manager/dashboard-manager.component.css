@@ -1,0 +1,8 @@
+canvas {
+  max-height: 280px;
+}
+
+/* Les barres horizontales ont besoin de plus de hauteur : une ligne par tache. */
+.graphique-retards canvas {
+  max-height: 420px;
+}

@@ -1,0 +1,95 @@
+<div class="min-h-screen bg-paper flex">
+
+  @if (layout.sidebarVisible) {
+    <aside class="w-60 shrink-0 border-r border-line flex flex-col justify-between min-h-screen">
+      <div>
+        <div class="p-6 border-b border-line">
+          <span class="text-sm tracking-widest uppercase text-muted">TaskFlow</span>
+        </div>
+
+        <nav class="p-4 flex flex-col gap-1 text-sm">
+          <a (click)="navigateToCalendrier()" class="px-3 py-2 text-ink hover:bg-line/40 cursor-pointer">Calendrier</a>
+          <span class="px-3 py-2 bg-ink text-paper">Tableau de bord</span>
+        </nav>
+      </div>
+
+      <app-sidebar-footer [userPrenom]="userPrenom" [userNom]="userNom" />
+    </aside>
+  }
+
+  <div class="flex-1 min-h-screen min-w-0">
+
+    <div class="border-b border-line px-8 py-5 flex items-center justify-between gap-4">
+      <div>
+        <h1 class="text-xl text-ink">Tableau de bord</h1>
+        <p class="text-muted text-sm mt-0.5">Vue d'ensemble de la charge de travail de l'équipe.</p>
+      </div>
+
+      <button (click)="layout.toggleSidebar()" class="border border-line p-2 hover:border-ink transition-colors" aria-label="Masquer la navigation">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M2 4h12M2 8h12M2 12h12" />
+        </svg>
+      </button>
+    </div>
+
+    <div class="px-8 py-6 grid grid-cols-1 md:grid-cols-3 gap-4 mb-2">
+      <div class="border border-line p-5">
+        <p class="text-xs text-muted uppercase tracking-wide mb-1">Tâches actives</p>
+        <p class="text-3xl text-ink">{{ totalActives }} <span class="text-base text-muted">/ {{ totalTaches }} au total</span></p>
+        @if (tachesNonAssignees > 0) {
+          <p class="mt-3 text-sm text-accent">{{ tachesNonAssignees }} non assignée(s) à un agent</p>
+        }
+      </div>
+      <div class="border border-line p-5">
+        <p class="text-xs text-muted uppercase tracking-wide mb-1">Tâches en retard</p>
+        <p class="text-3xl text-ink">{{ nombreEnRetard }} <span class="text-base text-muted">({{ pourcentageEnRetard }}% des actives)</span></p>
+        <p class="mt-3 text-sm text-muted">Le détail des plus anciennes est en bas de page.</p>
+      </div>
+      <div class="border border-line p-5" [class.border-accent]="agentsEnConflit.length > 0">
+        <p class="text-xs text-muted uppercase tracking-wide mb-1">Chevauchements d'horaire (14 prochains jours)</p>
+        <p class="text-3xl text-ink">{{ agentsEnConflit.length }}</p>
+        @if (agentsEnConflit.length > 0) {
+          <ul class="mt-3 text-sm text-accent space-y-1">
+            @for (nom of agentsEnConflit; track nom) {
+              <li>{{ nom }}</li>
+            }
+          </ul>
+        } @else {
+          <p class="mt-3 text-sm text-muted">Aucun agent avec des tâches qui se chevauchent.</p>
+        }
+      </div>
+    </div>
+
+    <div class="px-8 pb-8 grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div class="border border-line p-5">
+        <h3 class="text-sm text-muted uppercase tracking-wide mb-1">Charge actuelle par agent (14 derniers jours)</h3>
+        <p class="text-xs text-muted mb-4">Heures de tâches non terminées en cours sur la période. Moyenne de l'équipe : {{ moyenneHeures }} h — les barres en brun foncé sont au-dessus.</p>
+        @if (estNavigateur) {
+          <canvas baseChart [data]="chargeParAgentData" type="bar"></canvas>
+        }
+      </div>
+
+      <div class="border border-line p-5">
+        <h3 class="text-sm text-muted uppercase tracking-wide mb-4">Répartition par priorité (tâches actives)</h3>
+        @if (estNavigateur) {
+          <canvas baseChart [data]="parPrioriteData" type="doughnut"></canvas>
+        }
+      </div>
+
+      <div class="border border-line p-5 lg:col-span-2">
+        <h3 class="text-sm text-muted uppercase tracking-wide mb-4">Répartition par service (tâches actives)</h3>
+        @if (estNavigateur) {
+          <canvas baseChart [data]="parServiceData" type="bar"></canvas>
+        }
+      </div>
+
+      @if (nombreEnRetard > 0 && estNavigateur) {
+        <div class="border border-line p-5 lg:col-span-2 graphique-retards">
+          <h3 class="text-sm text-muted uppercase tracking-wide mb-1">Tâches les plus en retard</h3>
+          <p class="text-xs text-muted mb-4">Les 10 plus anciennes, de la plus en retard à la moins en retard.</p>
+          <canvas baseChart [data]="tachesEnRetardData" [options]="tachesEnRetardOptions" type="bar"></canvas>
+        </div>
+      }
+    </div>
+  </div>
+</div>
