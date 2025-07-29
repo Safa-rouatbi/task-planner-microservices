@@ -4,14 +4,14 @@ import { ServiceService } from '../service.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { LayoutService } from '../layout.service';
+import { NotificationService } from '../notification.service';
 import { SidebarFooterComponent } from '../shared/sidebar-footer/sidebar-footer.component';
 import { UserService } from '../user.service';
 
 @Component({
   selector: 'app-gestion-services',
-  imports: [CommonModule, FormsModule, MatSnackBarModule, SidebarFooterComponent],
+  imports: [CommonModule, FormsModule, SidebarFooterComponent],
   templateUrl: './gestion-services.component.html',
   styleUrl: './gestion-services.component.css'
 })
@@ -29,7 +29,7 @@ export class ServicesComponent implements OnInit {
   constructor(
     private serviceService: ServiceService,
     private router: Router,
-    private snackBar: MatSnackBar,
+    private notification: NotificationService,
     private userService: UserService,
     public layout: LayoutService
   ) { }
@@ -49,7 +49,7 @@ export class ServicesComponent implements OnInit {
         this.loading = false;
       },
       error: () => {
-        this.showMessage('Erreur lors du chargement des services.', 'error');
+        this.notification.erreur('Erreur lors du chargement des services.');
         this.loading = false;
       }
     });
@@ -57,7 +57,7 @@ export class ServicesComponent implements OnInit {
 
   save(): void {
     if (!this.service.nomService.trim()) {
-      this.showMessage('Le nom du service est obligatoire.', 'error');
+      this.notification.erreur('Le nom du service est obligatoire.');
       return;
     }
 
@@ -66,18 +66,18 @@ export class ServicesComponent implements OnInit {
         next: (updated) => {
           this.resetForm();
           this.loadServices();
-          this.showMessage(`Service "${updated.nomService}" mis à jour.`, 'success');
+          this.notification.succes(`Service "${updated.nomService}" mis à jour.`);
         },
-        error: () => this.showMessage("Échec de la mise à jour.", 'error')
+        error: () => this.notification.erreur("Échec de la mise à jour.")
       });
     } else {
       this.serviceService.create(this.service).subscribe({
         next: (created) => {
           this.resetForm();
           this.loadServices();
-          this.showMessage(`Service "${created.nomService}" ajouté.`, 'success');
+          this.notification.succes(`Service "${created.nomService}" ajouté.`);
         },
-        error: () => this.showMessage("Échec de l'ajout.", 'error')
+        error: () => this.notification.erreur("Échec de l'ajout.")
       });
     }
   }
@@ -93,9 +93,9 @@ export class ServicesComponent implements OnInit {
       this.serviceService.delete(id).subscribe({
         next: () => {
           this.loadServices();
-          this.showMessage('Service supprimé.', 'success');
+          this.notification.succes('Service supprimé.');
         },
-        error: () => this.showMessage("Échec de la suppression.", 'error')
+        error: () => this.notification.erreur("Échec de la suppression.")
       });
     }
   }
@@ -107,14 +107,6 @@ export class ServicesComponent implements OnInit {
   resetForm(): void {
     this.service = { nomService: '' };
     this.editing = false;
-  }
-
-  showMessage(text: string, type: 'success' | 'error'): void {
-    this.snackBar.open(text, 'Fermer', {
-      duration: type === 'error' ? 5000 : 3000,
-      verticalPosition: 'top',
-      panelClass: [type === 'error' ? 'snackbar-error' : 'snackbar-success']
-    });
   }
 
   retour() {
@@ -133,15 +125,19 @@ export class ServicesComponent implements OnInit {
     this.modalOpen = true;
   }
 
-  navigatetocalnder() {
+  navigateToCalendrier() {
     this.router.navigate(['/calendrier']);
   }
 
-  navigatetouser() {
+  navigateToUser() {
     this.router.navigate(['/compte']);
   }
 
-  navigatetotache() {
+  navigateToTache() {
     this.router.navigate(['/tache']);
+  }
+
+  navigateToDashboard() {
+    this.router.navigate(['/dashboard-manager']);
   }
 }

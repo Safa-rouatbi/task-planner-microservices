@@ -3,12 +3,12 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { Compte, UserService } from '../user.service';
 import { Router } from '@angular/router';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { Service } from '../model/service.model';
 import { ServiceService } from '../service.service';
 import { combineLatest } from 'rxjs';
 import { CsvExportService } from '../csv-export.service';
 import { LayoutService } from '../layout.service';
+import { NotificationService } from '../notification.service';
 import { SidebarFooterComponent } from '../shared/sidebar-footer/sidebar-footer.component';
 
 @Component({
@@ -36,7 +36,7 @@ export class UserComponent implements OnInit {
     private serviceService: ServiceService,
     private fb: FormBuilder,
     private router: Router,
-    private snackBar: MatSnackBar,
+    private notification: NotificationService,
     private csvExport: CsvExportService,
     public layout: LayoutService
   ) {
@@ -70,11 +70,7 @@ export class UserComponent implements OnInit {
           this.isChargement = false;
         },
         error: () => {
-          this.snackBar.open('Erreur de chargement', 'Fermer', {
-            duration: 5000,
-            verticalPosition: 'top',
-            panelClass: ['snackbar-error']
-          });
+          this.notification.erreur('Erreur de chargement');
           this.isChargement = false;
         }
       });
@@ -108,26 +104,24 @@ export class UserComponent implements OnInit {
   }
 
   submit() {
-    const userData = this.form.value;
+    const userData = { ...this.form.value };
 
     if (this.selectedUserId) {
+      // En modification, un mot de passe vide veut dire "ne pas le changer".
+      // On l'enlève avant l'envoi pour ne pas risquer d'écraser l'ancien.
+      if (!userData.motdepasse) {
+        delete userData.motdepasse;
+      }
+
       this.userService.update(this.selectedUserId, userData).subscribe({
         next: () => {
           this.modalOpen = false;
           this.refreshUsers();
-          this.snackBar.open('Utilisateur modifié', 'Fermer', {
-            duration: 3000,
-            verticalPosition: 'top',
-            panelClass: ['snackbar-success']
-          });
+          this.notification.succes('Utilisateur modifié');
         },
         error: (err) => {
           console.error('Erreur modification:', err);
-          this.snackBar.open('Échec modification', 'Fermer', {
-            duration: 5000,
-            verticalPosition: 'top',
-            panelClass: ['snackbar-error']
-          });
+          this.notification.erreur('Échec modification');
         }
       });
     } else {
@@ -135,19 +129,11 @@ export class UserComponent implements OnInit {
         next: () => {
           this.modalOpen = false;
           this.refreshUsers();
-          this.snackBar.open('Utilisateur ajouté', 'Fermer', {
-            duration: 3000,
-            verticalPosition: 'top',
-            panelClass: ['snackbar-success']
-          });
+          this.notification.succes('Utilisateur ajouté');
         },
         error: (err) => {
           console.error('Erreur ajout:', err);
-          this.snackBar.open('Échec ajout', 'Fermer', {
-            duration: 5000,
-            verticalPosition: 'top',
-            panelClass: ['snackbar-error']
-          });
+          this.notification.erreur('Échec ajout');
         }
       });
     }
@@ -177,18 +163,15 @@ export class UserComponent implements OnInit {
             nomService: services.find(s => s.id === user.serviceId)?.nomService || '-'
           }));
         },
-        error: () => this.snackBar.open('Erreur de chargement', 'Fermer', {
-          duration: 5000,
-          verticalPosition: 'top',
-          panelClass: ['snackbar-error']
-        })
+        error: () => this.notification.erreur('Erreur de chargement')
       });
   }
 
-  navigatetocalnder() { this.router.navigate(['/calendrier']); }
-  navigatetouser() { this.router.navigate(['/compte']); }
-  navigatetotache() { this.router.navigate(['/tache']); }
-  navigatetoservice() { this.router.navigate(['/services']); }
+  navigateToCalendrier() { this.router.navigate(['/calendrier']); }
+  navigateToUser() { this.router.navigate(['/compte']); }
+  navigateToTache() { this.router.navigate(['/tache']); }
+  navigateToService() { this.router.navigate(['/services']); }
+  navigateToDashboard() { this.router.navigate(['/dashboard-manager']); }
 
   telechargerCSV(): void {
     const headers = ['Nom', 'Prénom', 'Email', 'Rôle', 'Statut', 'Service'];
