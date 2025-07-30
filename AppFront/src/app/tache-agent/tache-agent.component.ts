@@ -1,7 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { Tache } from '../model/Tache';
 import { Router } from '@angular/router';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { Compte, UserService } from '../user.service';
 import { buildParamsFiltreTaches, FiltresTaches, TaskService } from '../task.service';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
@@ -10,11 +9,12 @@ import { Service } from '../model/service.model';
 import { ServiceService } from '../service.service';
 import { CsvExportService } from '../csv-export.service';
 import { LayoutService } from '../layout.service';
+import { NotificationService } from '../notification.service';
 import { SidebarFooterComponent } from '../shared/sidebar-footer/sidebar-footer.component';
 
 @Component({
   selector: 'app-tache-agent',
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, MatSnackBarModule, SidebarFooterComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, SidebarFooterComponent],
   templateUrl: './tache-agent.component.html',
   styleUrl: './tache-agent.component.css'
 })
@@ -43,7 +43,7 @@ export class TacheAgentComponent implements OnInit {
     private taskService: TaskService,
     private userService: UserService,
     private router: Router,
-    private snackBar: MatSnackBar,
+    private notification: NotificationService,
     private serviceService: ServiceService,
     private csvExport: CsvExportService,
     public layout: LayoutService
@@ -84,11 +84,7 @@ export class TacheAgentComponent implements OnInit {
       },
       error: (err: any) => {
         console.error('Erreur API:', err);
-        this.snackBar.open('Erreur de chargement des tâches.', 'Fermer', {
-          duration: 5000,
-          verticalPosition: 'top',
-          panelClass: ['snackbar-error']
-        });
+        this.notification.erreur('Erreur de chargement des tâches.');
       }
     });
   }
@@ -127,11 +123,7 @@ export class TacheAgentComponent implements OnInit {
   saveTache(): void {
     const dateDebut = new Date(this.selectedTache.dateDebut);
     if (isNaN(dateDebut.getTime())) {
-      this.snackBar.open('Merci de renseigner une date de début valide.', 'Fermer', {
-        duration: 4000,
-        verticalPosition: 'top',
-        panelClass: ['snackbar-error']
-      });
+      this.notification.erreur('Merci de renseigner une date de début valide.', 4000);
       return;
     }
 
@@ -147,11 +139,7 @@ export class TacheAgentComponent implements OnInit {
     request.subscribe({
       next: () => {
         const message = this.isEdit ? 'Tâche modifiée avec succès.' : 'Tâche créée avec succès.';
-        this.snackBar.open(message, 'Fermer', {
-          duration: 3000,
-          verticalPosition: 'top',
-          panelClass: ['snackbar-success']
-        });
+        this.notification.succes(message);
 
         this.loadTaches();
         this.closeModal();
@@ -167,11 +155,7 @@ export class TacheAgentComponent implements OnInit {
           errorMessage = 'Données invalides. Vérifiez les champs.';
         }
 
-        this.snackBar.open(errorMessage, 'Fermer', {
-          duration: 5000,
-          verticalPosition: 'top',
-          panelClass: ['snackbar-error']
-        });
+        this.notification.erreur(errorMessage);
       }
     });
   }
@@ -181,26 +165,18 @@ export class TacheAgentComponent implements OnInit {
 
     this.taskService.deleteTache(id).subscribe({
       next: () => {
-        this.snackBar.open('Tâche supprimée.', 'Fermer', {
-          duration: 3000,
-          verticalPosition: 'top',
-          panelClass: ['snackbar-success']
-        });
+        this.notification.succes('Tâche supprimée.');
         this.loadTaches();
       },
       error: (err: any) => {
         console.error('Erreur suppression tâche :', err);
-        this.snackBar.open('Échec de la suppression.', 'Fermer', {
-          duration: 5000,
-          verticalPosition: 'top',
-          panelClass: ['snackbar-error']
-        });
+        this.notification.erreur('Échec de la suppression.');
       }
     });
   }
 
-  navigatetotache(): void { this.router.navigate(['/tacheAgent']); }
-  navigatetocalendar(): void { this.router.navigate(['/agent-dashboard']); }
+  navigateToTache(): void { this.router.navigate(['/tacheAgent']); }
+  navigateToAgentDashboard(): void { this.router.navigate(['/agent-dashboard']); }
 
   telechargerCSV(): void {
     const headers = ['Titre', 'Description', 'Date de début', 'Durée (h)', 'Priorité', 'Agent', 'État'];

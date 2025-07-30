@@ -55,7 +55,8 @@ export class AgentDashboardComponent implements OnInit {
     dureeEnHeures: 0,
     priorite: '',
     agentId: null,
-    serviceId: null
+    serviceId: null,
+    etat: 'A faire'
   };
 
   filtres: FiltresTaches = {
@@ -296,7 +297,8 @@ export class AgentDashboardComponent implements OnInit {
       dureeEnHeures: 0,
       priorite: '',
       agentId: null,
-      serviceId: null
+      serviceId: null,
+      etat: 'A faire'
     };
   }
 
@@ -482,7 +484,7 @@ export class AgentDashboardComponent implements OnInit {
     this.updateTache(tache);
   }
 
-  navigatetotache() {
+  navigateToTache() {
     this.router.navigate(['/tacheAgent']);
   }
 

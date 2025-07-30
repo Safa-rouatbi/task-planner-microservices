@@ -4,16 +4,16 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Compte, UserService } from '../user.service';
 import { Router } from '@angular/router';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { Service } from '../model/service.model';
 import { ServiceService } from '../service.service';
 import { CsvExportService } from '../csv-export.service';
 import { LayoutService } from '../layout.service';
+import { NotificationService } from '../notification.service';
 import { SidebarFooterComponent } from '../shared/sidebar-footer/sidebar-footer.component';
 
 @Component({
   selector: 'app-tache',
-  imports: [CommonModule, FormsModule, MatSnackBarModule, SidebarFooterComponent],
+  imports: [CommonModule, FormsModule, SidebarFooterComponent],
   templateUrl: './tache.component.html',
   styleUrl: './tache.component.css'
 })
@@ -43,7 +43,7 @@ export class TacheComponent implements OnInit {
     private taskService: TaskService,
     private userService: UserService,
     private router: Router,
-    private snackBar: MatSnackBar,
+    private notification: NotificationService,
     private serviceService: ServiceService,
     private csvExport: CsvExportService,
     public layout: LayoutService
@@ -82,11 +82,7 @@ export class TacheComponent implements OnInit {
       },
       error: (err) => {
         console.error('Erreur chargement utilisateurs', err);
-        this.snackBar.open('Impossible de charger les agents.', 'Fermer', {
-          duration: 5000,
-          verticalPosition: 'top',
-          panelClass: ['snackbar-error']
-        });
+        this.notification.erreur('Impossible de charger les agents.');
         this.loadTaches();
       }
     });
@@ -101,11 +97,7 @@ export class TacheComponent implements OnInit {
       },
       error: (err: any) => {
         console.error('Erreur chargement tâches', err);
-        this.snackBar.open('Erreur de chargement des tâches.', 'Fermer', {
-          duration: 5000,
-          verticalPosition: 'top',
-          panelClass: ['snackbar-error']
-        });
+        this.notification.erreur('Erreur de chargement des tâches.');
       }
     });
   }
@@ -130,11 +122,7 @@ export class TacheComponent implements OnInit {
       },
       error: (err: any) => {
         console.error('Erreur filtrage', err);
-        this.snackBar.open('Erreur lors du filtrage.', 'Fermer', {
-          duration: 5000,
-          verticalPosition: 'top',
-          panelClass: ['snackbar-error']
-        });
+        this.notification.erreur('Erreur lors du filtrage.');
       }
     });
   }
@@ -149,11 +137,7 @@ export class TacheComponent implements OnInit {
       },
       error: (err: any) => {
         console.error('Erreur lors du chargement des tâches du service', err);
-        this.snackBar.open('Erreur lors du chargement.', 'Fermer', {
-          duration: 5000,
-          verticalPosition: 'top',
-          panelClass: ['snackbar-error']
-        });
+        this.notification.erreur('Erreur lors du chargement.');
       }
     });
   }
@@ -195,11 +179,7 @@ export class TacheComponent implements OnInit {
   saveTache(): void {
     const dateDebut = new Date(this.selectedTache.dateDebut);
     if (isNaN(dateDebut.getTime())) {
-      this.snackBar.open('Merci de renseigner une date de début valide.', 'Fermer', {
-        duration: 4000,
-        verticalPosition: 'top',
-        panelClass: ['snackbar-error']
-      });
+      this.notification.erreur('Merci de renseigner une date de début valide.', 4000);
       return;
     }
 
@@ -214,11 +194,7 @@ export class TacheComponent implements OnInit {
 
     request.subscribe({
       next: () => {
-        this.snackBar.open(
-          this.isEdit ? 'Tâche modifiée.' : 'Tâche créée.',
-          'Fermer',
-          { duration: 3000, verticalPosition: 'top', panelClass: ['snackbar-success'] }
-        );
+        this.notification.succes(this.isEdit ? 'Tâche modifiée.' : 'Tâche créée.');
         this.loadTaches();
         this.closeModal();
       },
@@ -227,11 +203,7 @@ export class TacheComponent implements OnInit {
         if (err.status === 401) message = 'Non autorisé.';
         else if (err.status === 403) message = 'Accès refusé.';
 
-        this.snackBar.open(message, 'Fermer', {
-          duration: 5000,
-          verticalPosition: 'top',
-          panelClass: ['snackbar-error']
-        });
+        this.notification.erreur(message);
       }
     });
   }
@@ -241,27 +213,20 @@ export class TacheComponent implements OnInit {
 
     this.taskService.deleteTache(id).subscribe({
       next: () => {
-        this.snackBar.open('Tâche supprimée.', 'Fermer', {
-          duration: 3000,
-          verticalPosition: 'top',
-          panelClass: ['snackbar-success']
-        });
+        this.notification.succes('Tâche supprimée.');
         this.loadTaches();
       },
       error: (err: any) => {
         console.error('Erreur suppression tâche:', err);
-        this.snackBar.open('Échec de la suppression.', 'Fermer', {
-          duration: 5000,
-          verticalPosition: 'top',
-          panelClass: ['snackbar-error']
-        });
+        this.notification.erreur('Échec de la suppression.');
       }
     });
   }
 
-  navigatetouser(): void { this.router.navigate(['/compte']); }
-  navigatetotache(): void { this.router.navigate(['/tache']); }
-  navigatetocalendar(): void { this.router.navigate(['/calendrier']); }
+  navigateToUser(): void { this.router.navigate(['/compte']); }
+  navigateToTache(): void { this.router.navigate(['/tache']); }
+  navigateToCalendrier(): void { this.router.navigate(['/calendrier']); }
+  navigateToDashboard(): void { this.router.navigate(['/dashboard-manager']); }
 
   telechargerCSV(): void {
     const headers = ['Titre', 'Description', 'Date de début', 'Durée (h)', 'Priorité', 'Agent', 'Service', 'État'];
