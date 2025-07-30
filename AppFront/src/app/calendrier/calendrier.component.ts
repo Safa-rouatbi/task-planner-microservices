@@ -9,14 +9,13 @@ import { buildParamsFiltreTaches, FiltresTaches, Tache, TaskService } from '../t
 import { FormsModule } from '@angular/forms';
 import { Compte, UserService } from '../user.service';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { DetailsTacheDialogComponent } from '../details-tache-dialog/details-tache-dialog.component';
+import { NotificationService } from '../notification.service';
 import { catchError, EMPTY, Observable, tap } from 'rxjs';
 import resourceTimelinePlugin from '@fullcalendar/resource-timeline';
 import { Service } from '../model/service.model';
 import { ServiceService } from '../service.service';
-import { buildCalendarEvents, markConflicts } from '../calendar-events.util';
-import { getWeekNumber } from '../date-utils';
+import { buildCalendarEvents, markConflicts, renderEventContent, renderSlotLabelContent, renderResourceLabelContent } from '../calendar-events.util';
 import { LayoutService } from '../layout.service';
 import { SidebarFooterComponent } from '../shared/sidebar-footer/sidebar-footer.component';
 
@@ -31,7 +30,7 @@ interface TacheExtendedProps {
 @Component({
   selector: 'app-calendrier',
   standalone: true,
-  imports: [FullCalendarModule, CommonModule, FormsModule, MatDialogModule, MatSnackBarModule, SidebarFooterComponent],
+  imports: [FullCalendarModule, CommonModule, FormsModule, MatDialogModule, SidebarFooterComponent],
   templateUrl: './calendrier.component.html',
   styleUrls: ['./calendrier.component.css']
 })
@@ -47,7 +46,8 @@ export class CalendrierComponent implements OnInit {
     dureeEnHeures: 0,
     priorite: '',
     agentId: null,
-    serviceId: null
+    serviceId: null,
+    etat: 'A faire'
   };
 
   filtres: FiltresTaches = {
@@ -96,97 +96,10 @@ export class CalendrierComponent implements OnInit {
 
     schedulerLicenseKey: 'CC-Attribution-NonCommercial-NoDerivatives',
 
-    eventContent: (info) => {
-      const tache = info.event.extendedProps as Tache;
-
-      const color = tache.codeColor || '#6366f1';
-      const isCadre = tache.cadre === true;
-      const isConteneur = tache.conteneur === true;
-
-      const textColor = isConteneur ? 'white' : '#1f2937';
-      const backgroundColor = isConteneur ? color : '#f3f4f6';
-      const borderColor = isCadre ? '#ef4444' : color;
-      const border = isCadre ? '3px solid' : '1px solid';
-
-      const opacity = info.isPast ? '0.7' : '1';
-
-      return {
-        html: `
-          <div style="
-            background-color: ${backgroundColor};
-            color: ${textColor};
-            border: ${border};
-            border-color: ${borderColor};
-            border-radius: 8px;
-            padding: 6px 10px;
-            font-size: 0.85em;
-            font-weight: 600;
-            text-align: center;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            transition: all 0.2s ease;
-            opacity: ${opacity};
-            box-sizing: border-box;
-            min-height: 28px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-          ">
-            ${info.timeText ? `<span style="font-size:0.7em; opacity:0.9;">${info.timeText}</span><br/>` : ''}
-            <span>${info.event.title}</span>
-          </div>
-        `
-      };
-    },
-
-    slotLabelContent: (arg) => {
-      const date = new Date(arg.date);
-      const day = date.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
-      const weekNumber = getWeekNumber(date);
-
-      if (date.getDay() === 1) {
-        return {
-          html: `
-            <div style="text-align:center; padding: 4px;">
-              <div style="font-weight:600; color:#1f2937;">${day}</div>
-              <div style="
-                background:#e0e0e0;
-                color:#4b5563;
-                border-radius:4px;
-                padding:2px 6px;
-                font-size:0.75em;
-                font-weight:500;
-                margin-top:4px;
-                display:inline-block;">
-                Semaine ${weekNumber}
-              </div>
-            </div>
-          `
-        };
-      }
-
-      return {
-        html: `<div style="text-align:center; padding:4px; color:#4b5563; font-size:0.85em;">${day}</div>`
-      };
-    },
-
+    eventContent: renderEventContent,
+    slotLabelContent: renderSlotLabelContent,
     resourceAreaWidth: '150px',
-    resourceLabelContent: (info) => {
-      return {
-        html: `
-          <div style="
-            font-weight:600;
-            color:#1f2937;
-            padding:8px;
-            margin-bottom: 4px;
-          ">
-            ${info.resource.title}
-          </div>
-        `
-      };
-    },
+    resourceLabelContent: renderResourceLabelContent,
     eventClick: this.onEventClick.bind(this),
     eventDrop: this.onEventDrop.bind(this),
 
@@ -202,12 +115,12 @@ export class CalendrierComponent implements OnInit {
     private router: Router,
     private userService: UserService,
     private serviceService: ServiceService,
-    private snackBar: MatSnackBar,
+    private notification: NotificationService,
     public layout: LayoutService
   ) {}
 
   ngOnInit(): void {
-    this.chargerTaches();
+    this.chargerTaches().subscribe();
     this.loadUsers();
     this.loadServices();
     this.refreshCalendar();
@@ -278,7 +191,8 @@ export class CalendrierComponent implements OnInit {
       dureeEnHeures: 0,
       priorite: '',
       agentId: null,
-      serviceId: null
+      serviceId: null,
+      etat: 'A faire'
     };
   }
 
@@ -298,11 +212,7 @@ export class CalendrierComponent implements OnInit {
   ajouterTache() {
     const dateDebut = new Date(this.nouvelleTache.dateDebut);
     if (isNaN(dateDebut.getTime())) {
-      this.snackBar.open('Merci de renseigner une date de début valide.', 'Fermer', {
-        duration: 4000,
-        verticalPosition: 'top',
-        panelClass: ['snackbar-error']
-      });
+      this.notification.erreur('Merci de renseigner une date de début valide.', 4000);
       return;
     }
 
@@ -313,21 +223,13 @@ export class CalendrierComponent implements OnInit {
 
     this.taskService.ajouterTache(body).subscribe({
       next: () => {
-        this.snackBar.open('Tâche ajoutée avec succès.', 'Fermer', {
-          duration: 3000,
-          verticalPosition: 'top',
-          panelClass: ['snackbar-success']
-        });
+        this.notification.succes('Tâche ajoutée avec succès.');
         this.fermerModal();
         this.refreshCalendar();
       },
       error: (err: any) => {
         console.error('Erreur ajout tâche:', err);
-        this.snackBar.open("Erreur lors de l'ajout de la tâche.", 'Fermer', {
-          duration: 5000,
-          verticalPosition: 'top',
-          panelClass: ['snackbar-error']
-        });
+        this.notification.erreur("Erreur lors de l'ajout de la tâche.");
       }
     });
   }
@@ -360,11 +262,7 @@ export class CalendrierComponent implements OnInit {
       },
       error: (err: any) => {
         console.error('Erreur modification tâche :', err);
-        this.snackBar.open('Échec de la modification.', 'Fermer', {
-          duration: 5000,
-          verticalPosition: 'top',
-          panelClass: ['snackbar-error']
-        });
+        this.notification.erreur('Échec de la modification.');
       }
     });
   }
@@ -376,11 +274,7 @@ export class CalendrierComponent implements OnInit {
       },
       error: (err: any) => {
         console.error('Erreur suppression tâche :', err);
-        this.snackBar.open('Échec de la suppression.', 'Fermer', {
-          duration: 5000,
-          verticalPosition: 'top',
-          panelClass: ['snackbar-error']
-        });
+        this.notification.erreur('Échec de la suppression.');
       }
     });
   }
@@ -407,11 +301,7 @@ export class CalendrierComponent implements OnInit {
         const message = err.status === 403
           ? "Vous n'avez pas le droit d'accéder à ces données."
           : 'Erreur lors du filtrage. Vérifiez les paramètres.';
-        this.snackBar.open(message, 'Fermer', {
-          duration: 5000,
-          verticalPosition: 'top',
-          panelClass: ['snackbar-error']
-        });
+        this.notification.erreur(message);
       }
     });
   }
@@ -465,22 +355,22 @@ export class CalendrierComponent implements OnInit {
         const message = err.status === 403
           ? "Vous n'avez pas le droit de déplacer cette tâche."
           : 'Une erreur est survenue lors du déplacement de la tâche.';
-        this.snackBar.open(message, 'Fermer', {
-          duration: 5000,
-          verticalPosition: 'top',
-          panelClass: ['snackbar-error']
-        });
+        this.notification.erreur(message);
         this.refreshCalendar();
       }
     });
   }
 
-  navigatetouser() {
+  navigateToUser() {
     this.router.navigate(['/compte']);
   }
 
-  navigatetotache() {
+  navigateToTache() {
     this.router.navigate(['/tache']);
+  }
+
+  navigateToDashboard() {
+    this.router.navigate(['/dashboard-manager']);
   }
 
   exporterExcel() {
@@ -496,11 +386,7 @@ export class CalendrierComponent implements OnInit {
       },
       error: (err: any) => {
         console.error('Erreur export Excel', err);
-        this.snackBar.open("Erreur lors de l'export des tâches.", 'Fermer', {
-          duration: 5000,
-          verticalPosition: 'top',
-          panelClass: ['snackbar-error']
-        });
+        this.notification.erreur("Erreur lors de l'export des tâches.");
       }
     });
   }
@@ -509,11 +395,7 @@ export class CalendrierComponent implements OnInit {
     const serviceId = +(this.filtres.serviceId || '');
 
     if (!serviceId) {
-      this.snackBar.open('Aucun service sélectionné.', 'Fermer', {
-        duration: 4000,
-        verticalPosition: 'top',
-        panelClass: ['snackbar-error']
-      });
+      this.notification.erreur('Aucun service sélectionné.', 4000);
       return;
     }
 
@@ -523,11 +405,7 @@ export class CalendrierComponent implements OnInit {
       },
       error: (err: any) => {
         console.error('Erreur lors du chargement des tâches du service', err);
-        this.snackBar.open('Erreur lors du chargement des tâches de ce service.', 'Fermer', {
-          duration: 5000,
-          verticalPosition: 'top',
-          panelClass: ['snackbar-error']
-        });
+        this.notification.erreur('Erreur lors du chargement des tâches de ce service.');
       }
     });
   }
