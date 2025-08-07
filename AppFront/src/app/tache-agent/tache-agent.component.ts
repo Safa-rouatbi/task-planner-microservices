@@ -132,32 +132,58 @@ export class TacheAgentComponent implements OnInit {
       dateDebut: dateDebut.toISOString()
     };
 
-    const request = this.isEdit
-      ? this.taskService.updateTache(tacheToSend)
-      : this.taskService.ajouterTache(tacheToSend);
+    if (this.isEdit) {
+      this.taskService.updateTache(tacheToSend).subscribe({
+        next: () => {
+          this.notification.succes('Tâche modifiée avec succès.');
+          this.loadTaches();
+          this.closeModal();
+        },
+        error: (err) => {
+          console.error('Erreur lors de la sauvegarde :', err);
 
-    request.subscribe({
-      next: () => {
-        const message = this.isEdit ? 'Tâche modifiée avec succès.' : 'Tâche créée avec succès.';
-        this.notification.succes(message);
+          if (err.status === 409) {
+            // quelqu'un d'autre a modifie la tache entre temps, on recharge les donnees a jour
+            this.notification.erreur('Cette tâche a été modifiée entre-temps, les données ont été rafraîchies.');
+            this.loadTaches();
+            this.closeModal();
+            return;
+          }
 
-        this.loadTaches();
-        this.closeModal();
-      },
-      error: (err) => {
-        console.error('Erreur lors de la sauvegarde :', err);
-        let errorMessage = 'Erreur inconnue';
-        if (err.error?.message) {
-          errorMessage = err.error.message;
-        } else if (err.status === 401) {
-          errorMessage = 'Non autorisé. Token invalide.';
-        } else if (err.status === 400) {
-          errorMessage = 'Données invalides. Vérifiez les champs.';
+          let errorMessage = 'Erreur inconnue';
+          if (err.error?.message) {
+            errorMessage = err.error.message;
+          } else if (err.status === 401) {
+            errorMessage = 'Non autorisé. Token invalide.';
+          } else if (err.status === 400) {
+            errorMessage = 'Données invalides. Vérifiez les champs.';
+          }
+
+          this.notification.erreur(errorMessage);
         }
+      });
+    } else {
+      this.taskService.ajouterTache(tacheToSend).subscribe({
+        next: () => {
+          this.notification.succes('Tâche créée avec succès.');
+          this.loadTaches();
+          this.closeModal();
+        },
+        error: (err) => {
+          console.error('Erreur lors de la sauvegarde :', err);
+          let errorMessage = 'Erreur inconnue';
+          if (err.error?.message) {
+            errorMessage = err.error.message;
+          } else if (err.status === 401) {
+            errorMessage = 'Non autorisé. Token invalide.';
+          } else if (err.status === 400) {
+            errorMessage = 'Données invalides. Vérifiez les champs.';
+          }
 
-        this.notification.erreur(errorMessage);
-      }
-    });
+          this.notification.erreur(errorMessage);
+        }
+      });
+    }
   }
 
   deleteTache(id: number): void {

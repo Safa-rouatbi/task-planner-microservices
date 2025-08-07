@@ -107,8 +107,6 @@ export class UserComponent implements OnInit {
     const userData = { ...this.form.value };
 
     if (this.selectedUserId) {
-      // En modification, un mot de passe vide veut dire "ne pas le changer".
-      // On l'enlève avant l'envoi pour ne pas risquer d'écraser l'ancien.
       if (!userData.motdepasse) {
         delete userData.motdepasse;
       }
@@ -187,3 +185,4 @@ export class UserComponent implements OnInit {
     this.csvExport.export(headers, rows, 'utilisateurs');
   }
 }
+

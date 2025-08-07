@@ -1,13 +1,11 @@
 package com.example.task_service.controller;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
@@ -72,15 +70,12 @@ public ResponseEntity<ByteArrayResource> exporterTaches(
         usersArray = new UserDTO[0];
     }
 
-        Map<Long, String> userMap = Arrays.stream(usersArray)
-                .collect(Collectors.toMap(
-                    UserDTO::getId,
-                    UserDTO::getNomComplet,
-                    (x, y) -> x
-                ));
+        Map<Long, String> userMap = new HashMap<>();
+        for (UserDTO u : usersArray) {
+            userMap.put(u.getId(), u.getNomComplet());
+        }
 
-        ByteArrayInputStream stream = generateExcel(taches, userMap);
-        byte[] bytes = stream.readAllBytes();
+        byte[] bytes = generateExcel(taches, userMap);
         ByteArrayResource resource = new ByteArrayResource(bytes);
 
         return ResponseEntity.ok()
@@ -89,7 +84,7 @@ public ResponseEntity<ByteArrayResource> exporterTaches(
                 .body(resource);
     }
 
-    private ByteArrayInputStream generateExcel(List<Tache> taches, Map<Long, String> userMap) {
+    private byte[] generateExcel(List<Tache> taches, Map<Long, String> userMap) {
         try (Workbook workbook = new XSSFWorkbook()) {
             Sheet sheet = workbook.createSheet("Tâches");
 
@@ -134,12 +129,12 @@ public ResponseEntity<ByteArrayResource> exporterTaches(
             for (int i = 0; i < headers.length; i++) {
                 sheet.autoSizeColumn(i);
             }
-            sheet.setColumnWidth(3, 20 * 256);
-            sheet.setColumnWidth(8, 20 * 256);
+            sheet.setColumnWidth(3, 5000);
+            sheet.setColumnWidth(8, 5000);
 
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             workbook.write(out);
-            return new ByteArrayInputStream(out.toByteArray());
+            return out.toByteArray();
         } catch (IOException e) {
             throw new RuntimeException("Erreur Excel", e);
         }

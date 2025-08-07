@@ -1,6 +1,7 @@
 package com.example.task_service.controller;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -31,9 +32,11 @@ public class ParametrageCouleurController {
 
     @GetMapping("/{etat}")
     public ResponseEntity<ParametrageCouleur> getByEtat(@PathVariable String etat) {
-        return paramColorRepo.findByEtatIgnoreCase(etat)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+        Optional<ParametrageCouleur> param = paramColorRepo.findByEtatIgnoreCase(etat);
+        if (!param.isPresent()) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(param.get());
     }
 
     @PostMapping
@@ -48,15 +51,18 @@ public class ParametrageCouleurController {
 
     @PutMapping("/{id}")
     public ResponseEntity<ParametrageCouleur> update(@PathVariable Long id, @RequestBody ParametrageCouleur param) {
-        return paramColorRepo.findById(id)
-                .map(existing -> {
-                    existing.setEtat(param.getEtat());
-                    existing.setCodeColor(param.getCodeColor());
-                    existing.setCadre(param.isCadre());
-                    existing.setConteneur(param.isConteneur());
-                    ParametrageCouleur updated = paramColorRepo.save(existing);
-                    return ResponseEntity.ok(updated);
-                })
-                .orElse(ResponseEntity.notFound().build());
+        Optional<ParametrageCouleur> optionalExisting = paramColorRepo.findById(id);
+        if (!optionalExisting.isPresent()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        ParametrageCouleur existing = optionalExisting.get();
+        existing.setEtat(param.getEtat());
+        existing.setCodeColor(param.getCodeColor());
+        existing.setCadre(param.isCadre());
+        existing.setConteneur(param.isConteneur());
+
+        ParametrageCouleur updated = paramColorRepo.save(existing);
+        return ResponseEntity.ok(updated);
     }
 }

@@ -11,7 +11,6 @@ import { Compte, UserService } from '../user.service';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { DetailsTacheDialogComponent } from '../details-tache-dialog/details-tache-dialog.component';
 import { NotificationService } from '../notification.service';
-import { catchError, EMPTY, Observable, tap } from 'rxjs';
 import resourceTimelinePlugin from '@fullcalendar/resource-timeline';
 import { Service } from '../model/service.model';
 import { ServiceService } from '../service.service';
@@ -25,6 +24,7 @@ interface TacheExtendedProps {
   priorite: string;
   agentId: number;
   etat: string;
+  version: number;
 }
 
 @Component({
@@ -120,7 +120,7 @@ export class CalendrierComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.chargerTaches().subscribe();
+    this.chargerTaches();
     this.loadUsers();
     this.loadServices();
     this.refreshCalendar();
@@ -140,7 +140,8 @@ export class CalendrierComponent implements OnInit {
       dateDebutEnd: '',
       serviceId: ''
     };
-    this.chargerTaches().subscribe(() => this.refreshCalendar());
+    this.chargerTaches();
+    this.refreshCalendar();
   }
 
   loadServices() {
@@ -167,7 +168,8 @@ export class CalendrierComponent implements OnInit {
       dureeEnHeures: debut && fin ? this.getDurationInHours(debut, fin) : 0,
       priorite: props.priorite,
       agentId: props.agentId,
-      etat: props.etat
+      etat: props.etat,
+      version: props.version
     };
 
     this.openDetails(tache);
@@ -258,11 +260,19 @@ export class CalendrierComponent implements OnInit {
   updateTache(tache: Tache) {
     this.taskService.updateTache(tache).subscribe({
       next: () => {
-        this.chargerTaches().subscribe(() => this.refreshCalendar());
+        this.chargerTaches();
+        this.refreshCalendar();
       },
       error: (err: any) => {
         console.error('Erreur modification tâche :', err);
-        this.notification.erreur('Échec de la modification.');
+        if (err.status === 409) {
+          // quelqu'un d'autre a modifie la tache entre temps, on recharge les donnees a jour
+          this.notification.erreur('Cette tâche a été modifiée entre-temps, les données ont été rafraîchies.');
+          this.chargerTaches();
+          this.refreshCalendar();
+        } else {
+          this.notification.erreur('Échec de la modification.');
+        }
       }
     });
   }
@@ -270,7 +280,8 @@ export class CalendrierComponent implements OnInit {
   deleteTache(id: number) {
     this.taskService.deleteTache(id).subscribe({
       next: () => {
-        this.chargerTaches().subscribe(() => this.refreshCalendar());
+        this.chargerTaches();
+        this.refreshCalendar();
       },
       error: (err: any) => {
         console.error('Erreur suppression tâche :', err);
@@ -279,14 +290,15 @@ export class CalendrierComponent implements OnInit {
     });
   }
 
-  chargerTaches(): Observable<Tache[]> {
-    return this.taskService.getTaches().pipe(
-      tap(data => this.taches = data),
-      catchError(err => {
+  chargerTaches() {
+    this.taskService.getTaches().subscribe({
+      next: (data) => {
+        this.taches = data;
+      },
+      error: (err) => {
         console.error('Erreur chargement tâches :', err);
-        return EMPTY;
-      })
-    );
+      }
+    });
   }
 
   appliquerFiltres() {
@@ -298,10 +310,11 @@ export class CalendrierComponent implements OnInit {
       },
       error: (err: any) => {
         console.error('Erreur lors du filtrage des tâches', err);
-        const message = err.status === 403
-          ? "Vous n'avez pas le droit d'accéder à ces données."
-          : 'Erreur lors du filtrage. Vérifiez les paramètres.';
-        this.notification.erreur(message);
+        if (err.status === 403) {
+          this.notification.erreur("Vous n'avez pas le droit d'accéder à ces données.");
+        } else {
+          this.notification.erreur('Erreur lors du filtrage. Vérifiez les paramètres.');
+        }
       }
     });
   }
@@ -344,6 +357,7 @@ export class CalendrierComponent implements OnInit {
       dureeEnHeures: debut && fin ? this.getDurationInHours(debut, fin) : 0,
       priorite: props.priorite,
       etat: props.etat,
+      version: props.version,
       agentId: info.event.getResources()[0]?.id ? parseInt(info.event.getResources()[0].id) : null
     };
 
@@ -352,10 +366,14 @@ export class CalendrierComponent implements OnInit {
         this.refreshCalendar();
       },
       error: (err: any) => {
-        const message = err.status === 403
-          ? "Vous n'avez pas le droit de déplacer cette tâche."
-          : 'Une erreur est survenue lors du déplacement de la tâche.';
-        this.notification.erreur(message);
+        if (err.status === 403) {
+          this.notification.erreur("Vous n'avez pas le droit de déplacer cette tâche.");
+        } else if (err.status === 409) {
+          // quelqu'un d'autre a modifie la tache entre temps, on annule le deplacement visuellement
+          this.notification.erreur('Cette tâche a été modifiée entre-temps, les données ont été rafraîchies.');
+        } else {
+          this.notification.erreur('Une erreur est survenue lors du déplacement de la tâche.');
+        }
         this.refreshCalendar();
       }
     });
@@ -376,13 +394,12 @@ export class CalendrierComponent implements OnInit {
   exporterExcel() {
     this.taskService.exporterTachesExcel().subscribe({
       next: (data) => {
-        const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const blob = new Blob([data]);
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = 'taches_' + new Date().toISOString().split('T')[0] + '.xlsx';
+        link.download = 'taches.xlsx';
         link.click();
-        window.URL.revokeObjectURL(url);
       },
       error: (err: any) => {
         console.error('Erreur export Excel', err);

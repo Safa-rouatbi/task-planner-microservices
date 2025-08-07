@@ -8,6 +8,7 @@ export interface Tache {
   agentId: number | null;
   serviceId?: number | null;
   etat: string;
+  version?: number;
 
   codeColor?: string;
   cadre?: boolean;

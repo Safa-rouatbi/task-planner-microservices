@@ -6,7 +6,6 @@ import interactionPlugin from '@fullcalendar/interaction';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FullCalendarModule } from '@fullcalendar/angular';
-import { catchError, EMPTY, tap } from 'rxjs';
 import { DetailsTacheAgentDialogComponent } from '../details-tache-agent-dialog/details-tache-agent-dialog.component';
 import { Router } from '@angular/router';
 import { buildParamsFiltreTaches, FiltresTaches, TaskService } from '../task.service';
@@ -15,9 +14,8 @@ import { Tache } from '../model/Tache';
 import resourceTimelinePlugin from '@fullcalendar/resource-timeline';
 import { Service } from '../model/service.model';
 import { ServiceService } from '../service.service';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { buildCalendarEvents, markConflicts } from '../calendar-events.util';
-import { getWeekNumber } from '../date-utils';
+import { buildCalendarEvents, markConflicts, renderEventContent, renderSlotLabelContent, renderResourceLabelContent } from '../calendar-events.util';
+import { NotificationService } from '../notification.service';
 import { LayoutService } from '../layout.service';
 import { SidebarFooterComponent } from '../shared/sidebar-footer/sidebar-footer.component';
 
@@ -27,11 +25,12 @@ interface TacheExtendedProps {
   priorite: string;
   agentId: number;
   etat: string;
+  version: number;
 }
 
 @Component({
   selector: 'app-agent-dashboard',
-  imports: [CommonModule, FormsModule, FullCalendarModule, MatDialogModule, MatSnackBarModule, SidebarFooterComponent],
+  imports: [CommonModule, FormsModule, FullCalendarModule, MatDialogModule, SidebarFooterComponent],
   templateUrl: './agent-dashboard.component.html',
   styleUrl: './agent-dashboard.component.css'
 })
@@ -97,97 +96,10 @@ export class AgentDashboardComponent implements OnInit {
 
     schedulerLicenseKey: 'CC-Attribution-NonCommercial-NoDerivatives',
 
-    eventContent: (info) => {
-      const tache = info.event.extendedProps as Tache;
-
-      const color = tache.codeColor || '#6366f1';
-      const isCadre = tache.cadre === true;
-      const isConteneur = tache.conteneur === true;
-
-      const textColor = isConteneur ? 'white' : '#1f2937';
-      const backgroundColor = isConteneur ? color : '#f3f4f6';
-      const borderColor = isCadre ? '#ef4444' : color;
-      const border = isCadre ? '3px solid' : '1px solid';
-
-      const opacity = info.isPast ? '0.7' : '1';
-
-      return {
-        html: `
-          <div style="
-            background-color: ${backgroundColor};
-            color: ${textColor};
-            border: ${border};
-            border-color: ${borderColor};
-            border-radius: 8px;
-            padding: 6px 10px;
-            font-size: 0.85em;
-            font-weight: 600;
-            text-align: center;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            transition: all 0.2s ease;
-            opacity: ${opacity};
-            box-sizing: border-box;
-            min-height: 28px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-          ">
-            ${info.timeText ? `<span style="font-size:0.7em; opacity:0.9;">${info.timeText}</span><br/>` : ''}
-            <span>${info.event.title}</span>
-          </div>
-        `
-      };
-    },
-
-    slotLabelContent: (arg) => {
-      const date = new Date(arg.date);
-      const day = date.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
-      const weekNumber = getWeekNumber(date);
-
-      if (date.getDay() === 1) {
-        return {
-          html: `
-            <div style="text-align:center; padding: 4px;">
-              <div style="font-weight:600; color:#1f2937;">${day}</div>
-              <div style="
-                background:#e0e0e0;
-                color:#4b5563;
-                border-radius:4px;
-                padding:2px 6px;
-                font-size:0.75em;
-                font-weight:500;
-                margin-top:4px;
-                display:inline-block;">
-                Semaine ${weekNumber}
-              </div>
-            </div>
-          `
-        };
-      }
-
-      return {
-        html: `<div style="text-align:center; padding:4px; color:#4b5563; font-size:0.85em;">${day}</div>`
-      };
-    },
-
+    eventContent: renderEventContent,
+    slotLabelContent: renderSlotLabelContent,
     resourceAreaWidth: '150px',
-    resourceLabelContent: (info) => {
-      return {
-        html: `
-          <div style="
-            font-weight:600;
-            color:#1f2937;
-            padding:8px;
-            margin-bottom: 4px;
-          ">
-            ${info.resource.title}
-          </div>
-        `
-      };
-    },
+    resourceLabelContent: renderResourceLabelContent,
     eventClick: this.onEventClick.bind(this),
     eventDrop: this.onEventDrop.bind(this),
 
@@ -203,7 +115,7 @@ export class AgentDashboardComponent implements OnInit {
     private taskService: TaskService,
     private userService: UserService,
     private serviceService: ServiceService,
-    private snackBar: MatSnackBar,
+    private notification: NotificationService,
     public layout: LayoutService
   ) {}
 
@@ -257,11 +169,7 @@ export class AgentDashboardComponent implements OnInit {
   ajouterTache() {
     const dateDebut = new Date(this.nouvelleTache.dateDebut);
     if (isNaN(dateDebut.getTime())) {
-      this.snackBar.open('Merci de renseigner une date de début valide.', 'Fermer', {
-        duration: 4000,
-        verticalPosition: 'top',
-        panelClass: ['snackbar-error']
-      });
+      this.notification.erreur('Merci de renseigner une date de début valide.', 4000);
       return;
     }
 
@@ -272,11 +180,7 @@ export class AgentDashboardComponent implements OnInit {
 
     this.taskService.ajouterTache(body).subscribe({
       next: () => {
-        this.snackBar.open('Tâche ajoutée avec succès.', 'Fermer', {
-          duration: 3000,
-          verticalPosition: 'top',
-          panelClass: ['snackbar-success']
-        });
+        this.notification.succes('Tâche ajoutée avec succès.');
         this.fermerModal();
         this.chargerTaches();
       },
@@ -312,25 +216,22 @@ export class AgentDashboardComponent implements OnInit {
       ? this.taskService.getTaches()
       : this.taskService.getMesTaches();
 
-    requete
-      .pipe(
-        tap(data => {
-          this.taches = data;
+    requete.subscribe({
+      next: (data) => {
+        this.taches = data;
 
-          const events = buildCalendarEvents(data);
-          markConflicts(events);
+        const events = buildCalendarEvents(data);
+        markConflicts(events);
 
-          this.calendarOptions = {
-            ...this.calendarOptions,
-            events: events
-          };
-        }),
-        catchError(err => {
-          console.error('Erreur chargement tâches :', err);
-          return EMPTY;
-        })
-      )
-      .subscribe();
+        this.calendarOptions = {
+          ...this.calendarOptions,
+          events: events
+        };
+      },
+      error: (err) => {
+        console.error('Erreur chargement tâches :', err);
+      }
+    });
   }
 
   onEventClick(info: EventClickArg): void {
@@ -346,7 +247,8 @@ export class AgentDashboardComponent implements OnInit {
       dureeEnHeures: debut && fin ? (fin.getTime() - debut.getTime()) / (1000 * 60 * 60) : 0,
       priorite: props.priorite,
       agentId: props.agentId,
-      etat: props.etat
+      etat: props.etat,
+      version: props.version
     };
 
     this.openDetails(tache);
@@ -378,14 +280,15 @@ export class AgentDashboardComponent implements OnInit {
       next: () => this.chargerTaches(),
       error: (err: any) => {
         console.error('Erreur modification tâche :', err);
-        const message = err.status === 403
-          ? "Vous n'avez pas le droit de modifier cette tâche."
-          : 'Échec de la modification.';
-        this.snackBar.open(message, 'Fermer', {
-          duration: 5000,
-          verticalPosition: 'top',
-          panelClass: ['snackbar-error']
-        });
+        if (err.status === 403) {
+          this.notification.erreur("Vous n'avez pas le droit de modifier cette tâche.");
+        } else if (err.status === 409) {
+          // quelqu'un d'autre a modifie la tache entre temps, on recharge les donnees a jour
+          this.notification.erreur('Cette tâche a été modifiée entre-temps, les données ont été rafraîchies.');
+          this.chargerTaches();
+        } else {
+          this.notification.erreur('Échec de la modification.');
+        }
       }
     });
   }
@@ -408,14 +311,11 @@ export class AgentDashboardComponent implements OnInit {
       },
       error: (err: any) => {
         console.error('Erreur lors du filtrage des tâches', err);
-        const message = err.status === 403
-          ? "Vous n'avez pas le droit d'accéder à ces données."
-          : 'Erreur lors du filtrage. Vérifiez les paramètres.';
-        this.snackBar.open(message, 'Fermer', {
-          duration: 5000,
-          verticalPosition: 'top',
-          panelClass: ['snackbar-error']
-        });
+        if (err.status === 403) {
+          this.notification.erreur("Vous n'avez pas le droit d'accéder à ces données.");
+        } else {
+          this.notification.erreur('Erreur lors du filtrage. Vérifiez les paramètres.');
+        }
       }
     });
   }
@@ -431,11 +331,7 @@ export class AgentDashboardComponent implements OnInit {
     const serviceId = +(this.filtres.serviceId || '');
 
     if (!serviceId) {
-      this.snackBar.open('Aucun service sélectionné.', 'Fermer', {
-        duration: 4000,
-        verticalPosition: 'top',
-        panelClass: ['snackbar-error']
-      });
+      this.notification.erreur('Aucun service sélectionné.', 4000);
       return;
     }
 
@@ -445,11 +341,7 @@ export class AgentDashboardComponent implements OnInit {
       },
       error: (err: any) => {
         console.error('Erreur lors du chargement des tâches du service', err);
-        this.snackBar.open('Erreur lors du chargement des tâches de ce service.', 'Fermer', {
-          duration: 5000,
-          verticalPosition: 'top',
-          panelClass: ['snackbar-error']
-        });
+        this.notification.erreur('Erreur lors du chargement des tâches de ce service.');
       }
     });
   }
@@ -468,15 +360,12 @@ export class AgentDashboardComponent implements OnInit {
       dureeEnHeures: debut && fin ? (fin.getTime() - debut.getTime()) / (1000 * 60 * 60) : 0,
       priorite: props.priorite,
       agentId: props.agentId,
-      etat: props.etat
+      etat: props.etat,
+      version: props.version
     };
 
     if (tache.agentId !== this.userId) {
-      this.snackBar.open('Vous ne pouvez déplacer que vos propres tâches.', 'Fermer', {
-        duration: 4000,
-        verticalPosition: 'top',
-        panelClass: ['snackbar-error']
-      });
+      this.notification.erreur('Vous ne pouvez déplacer que vos propres tâches.', 4000);
       info.revert();
       return;
     }
@@ -491,21 +380,16 @@ export class AgentDashboardComponent implements OnInit {
   exporterExcel() {
     this.taskService.exporterTachesExcel().subscribe({
       next: (data) => {
-        const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const blob = new Blob([data]);
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = 'taches_' + new Date().toISOString().split('T')[0] + '.xlsx';
+        link.download = 'taches.xlsx';
         link.click();
-        window.URL.revokeObjectURL(url);
       },
       error: (err: any) => {
         console.error('Erreur export Excel', err);
-        this.snackBar.open("Erreur lors de l'export des tâches.", 'Fermer', {
-          duration: 5000,
-          verticalPosition: 'top',
-          panelClass: ['snackbar-error']
-        });
+        this.notification.erreur("Erreur lors de l'export des tâches.");
       }
     });
   }

@@ -16,6 +16,7 @@ public class TacheMapper {
         t.setAgentId(dto.getAgentId());
         t.setServiceId(dto.getServiceId());
         t.setEtat(dto.getEtat());
+        t.setVersion(dto.getVersion());
         return t;
     }
 
@@ -30,6 +31,7 @@ public class TacheMapper {
         dto.setAgentId(t.getAgentId());
         dto.setServiceId(t.getServiceId());
         dto.setEtat(t.getEtat());
+        dto.setVersion(t.getVersion());
 
         dto.setCodeColor(null);
         dto.setCadre(false);

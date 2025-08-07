@@ -1,6 +1,6 @@
 package com.example.user_service.controller;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -33,9 +33,10 @@ public ResponseEntity<String> creerAgent(@RequestBody CompteDTO dto) {
     @GetMapping("/all")
 public ResponseEntity<List<CompteDTO>> getAll() {
     List<Compte> comptes = compteService.getUsers();
-    List<CompteDTO> dtos = comptes.stream()
-        .map(CompteDTO::new)
-        .collect(Collectors.toList());
+    List<CompteDTO> dtos = new ArrayList<>();
+    for (Compte c : comptes) {
+        dtos.add(new CompteDTO(c));
+    }
     return ResponseEntity.ok(dtos);
 }
 
@@ -87,9 +88,10 @@ public ResponseEntity<String> activerCompte(@PathVariable Long id) {
 @GetMapping("/by-service/{serviceId}")
 public ResponseEntity<List<CompteDTO>> getUsersByService(@PathVariable Long serviceId) {
     List<Compte> comptes = compteService.getUsersByServiceId(serviceId);
-    List<CompteDTO> dtos = comptes.stream()
-        .map(CompteDTO::new)
-        .collect(Collectors.toList());
+    List<CompteDTO> dtos = new ArrayList<>();
+    for (Compte c : comptes) {
+        dtos.add(new CompteDTO(c));
+    }
     return ResponseEntity.ok(dtos);
 }
 

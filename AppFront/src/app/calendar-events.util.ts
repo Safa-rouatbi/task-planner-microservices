@@ -25,6 +25,7 @@ export function buildCalendarEvents(taches: Tache[]): EventInputWithClassNames[]
       priorite: tache.priorite,
       agentId: tache.agentId,
       etat: tache.etat,
+      version: tache.version,
       codeColor: tache.codeColor,
       cadre: tache.cadre,
       conteneur: tache.conteneur

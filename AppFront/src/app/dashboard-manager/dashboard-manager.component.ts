@@ -37,7 +37,7 @@ export class DashboardManagerComponent implements OnInit {
 
   tachesEnRetardData: ChartData<'bar'> = { labels: [], datasets: [{ data: [], label: 'Jours de retard' }] };
 
-  // Barres horizontales : les titres de taches sont trop longs pour tenir en abscisse.
+  // Barres horizontales : les titres de taches sont trop longs 
   tachesEnRetardOptions: ChartOptions<'bar'> = {
     indexAxis: 'y',
     plugins: { legend: { display: false } },
@@ -49,7 +49,6 @@ export class DashboardManagerComponent implements OnInit {
   users: Compte[] = [];
   services: Service[] = [];
 
-  // Chart.js a besoin d'un vrai canvas cote serveur SSR il n'existe pas on n'affiche les graphiques que dans le navigateur.
   estNavigateur = false;
 
   constructor(
@@ -107,7 +106,6 @@ export class DashboardManagerComponent implements OnInit {
         const maintenant = new Date();
         const dans14Jours = new Date(maintenant.getTime() + 14 * 24 * 60 * 60 * 1000);
 
-       
         const tachesActives = taches.filter(t => {
           if (t.etat === 'Terminée') return false;
           const debut = new Date(t.dateDebut);
@@ -137,7 +135,6 @@ export class DashboardManagerComponent implements OnInit {
     this.nombreEnRetard = stats.nombreEnRetard;
     this.tachesNonAssignees = stats.tachesNonAssignees;
 
-   
     this.pourcentageEnRetard = stats.totalActives > 0
       ? Math.round((stats.nombreEnRetard / stats.totalActives) * 100)
       : 0;
@@ -162,7 +159,6 @@ export class DashboardManagerComponent implements OnInit {
       datasets: [{ data: Object.values(stats.parPriorite), backgroundColor: ['#a15c3e', '#7c4730', '#ddd5c4'] }]
     };
 
-   
     const labelsService = Object.keys(stats.parService).map(id => this.getNomService(+id));
     const valeursService = Object.values(stats.parService);
     if (stats.tachesSansService > 0) {
@@ -175,10 +171,9 @@ export class DashboardManagerComponent implements OnInit {
       datasets: [{ data: valeursService, label: 'Tâches', backgroundColor: '#221f1a' }]
     };
 
-
     this.tachesEnRetardData = {
       labels: stats.tachesEnRetard.map(
-        t => `${t.titre} (${this.getNomAgentCourt(t.agentId)}) — ${this.formatRetard(t.heuresRetard)}`
+        t => `${t.titre} (${this.getNomAgentCourt(t.agentId)}) - ${this.formatRetard(t.heuresRetard)}`
       ),
       datasets: [{
         data: stats.tachesEnRetard.map(t => Math.round((t.heuresRetard / 24) * 10) / 10),

@@ -188,24 +188,45 @@ export class TacheComponent implements OnInit {
       dateDebut: dateDebut.toISOString()
     };
 
-    const request = this.isEdit
-      ? this.taskService.updateTache(tacheToSend)
-      : this.taskService.ajouterTache(tacheToSend);
+    if (this.isEdit) {
+      this.taskService.updateTache(tacheToSend).subscribe({
+        next: () => {
+          this.notification.succes('Tâche modifiée.');
+          this.loadTaches();
+          this.closeModal();
+        },
+        error: (err) => {
+          if (err.status === 409) {
+            // quelqu'un d'autre a modifie la tache entre temps, on recharge les donnees a jour
+            this.notification.erreur('Cette tâche a été modifiée entre-temps, les données ont été rafraîchies.');
+            this.loadTaches();
+            this.closeModal();
+            return;
+          }
 
-    request.subscribe({
-      next: () => {
-        this.notification.succes(this.isEdit ? 'Tâche modifiée.' : 'Tâche créée.');
-        this.loadTaches();
-        this.closeModal();
-      },
-      error: (err) => {
-        let message = 'Données invalides.';
-        if (err.status === 401) message = 'Non autorisé.';
-        else if (err.status === 403) message = 'Accès refusé.';
+          let message = 'Données invalides.';
+          if (err.status === 401) message = 'Non autorisé.';
+          else if (err.status === 403) message = 'Accès refusé.';
 
-        this.notification.erreur(message);
-      }
-    });
+          this.notification.erreur(message);
+        }
+      });
+    } else {
+      this.taskService.ajouterTache(tacheToSend).subscribe({
+        next: () => {
+          this.notification.succes('Tâche créée.');
+          this.loadTaches();
+          this.closeModal();
+        },
+        error: (err) => {
+          let message = 'Données invalides.';
+          if (err.status === 401) message = 'Non autorisé.';
+          else if (err.status === 403) message = 'Accès refusé.';
+
+          this.notification.erreur(message);
+        }
+      });
+    }
   }
 
   deleteTache(id: number): void {
@@ -223,10 +244,21 @@ export class TacheComponent implements OnInit {
     });
   }
 
-  navigateToUser(): void { this.router.navigate(['/compte']); }
-  navigateToTache(): void { this.router.navigate(['/tache']); }
-  navigateToCalendrier(): void { this.router.navigate(['/calendrier']); }
-  navigateToDashboard(): void { this.router.navigate(['/dashboard-manager']); }
+  navigateToUser(): void {
+    this.router.navigate(['/compte']);
+  }
+
+  navigateToTache(): void {
+    this.router.navigate(['/tache']);
+  }
+
+  navigateToCalendrier(): void {
+    this.router.navigate(['/calendrier']);
+  }
+
+  navigateToDashboard(): void {
+    this.router.navigate(['/dashboard-manager']);
+  }
 
   telechargerCSV(): void {
     const headers = ['Titre', 'Description', 'Date de début', 'Durée (h)', 'Priorité', 'Agent', 'Service', 'État'];

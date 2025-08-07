@@ -16,6 +16,9 @@ public class Tache {
     private String priorite;
     private Long agentId;
     private Long serviceId;
+    
+    @Version
+    private int version;
 
     @Column(nullable = false)
     private String etat = "A faire";
@@ -91,5 +94,12 @@ public class Tache {
 
     public void setEtat(String etat) {
         this.etat = etat;
+    }
+
+    public int getVersion() {
+        return version;
+    }
+    public void setVersion(int version) {
+        this.version = version;
     }
 }

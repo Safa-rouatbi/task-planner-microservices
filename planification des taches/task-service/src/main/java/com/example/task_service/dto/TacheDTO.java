@@ -12,6 +12,7 @@ public class TacheDTO {
     private Long agentId;
     private Long serviceId;
     private String etat;
+    private int version;
 
     private String codeColor;
     private boolean cadre;
@@ -43,6 +44,9 @@ public class TacheDTO {
 
     public String getEtat() { return etat;}
     public void setEtat(String etat) { this.etat = etat;}
+
+    public int getVersion() { return version; }
+    public void setVersion(int version) { this.version = version; }
 
     public String getCodeColor() { return codeColor; }
     public void setCodeColor(String codeColor) { this.codeColor = codeColor; }
