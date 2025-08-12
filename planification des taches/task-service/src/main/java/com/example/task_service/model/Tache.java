@@ -18,6 +18,7 @@ public class Tache {
     private Long serviceId;
     
     @Version
+    @Column(columnDefinition = "integer default 0")
     private int version;
 
     @Column(nullable = false)
