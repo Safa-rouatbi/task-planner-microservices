@@ -1,5 +1,6 @@
 export const environment = {
   production: false,
   taskApiUrl: 'http://localhost:8083',
-  gatewayApiUrl: 'http://localhost:8080'
+  gatewayApiUrl: 'http://localhost:8080',
+  wsUrl: 'ws://localhost:8083/ws'
 };
