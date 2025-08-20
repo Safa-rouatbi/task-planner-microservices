@@ -40,7 +40,9 @@ export class CalendrierComponent implements OnInit, OnDestroy {
   modalOuvert = false;
   taches: Tache[] = [];
   services: Service[] = [];
+  utilisateursConnectes: string[] = [];
   private tacheEventsSubscription?: Subscription;
+  private presenceSubscription?: Subscription;
 
   nouvelleTache = {
     titre: '',
@@ -140,10 +142,16 @@ export class CalendrierComponent implements OnInit, OnDestroy {
       this.chargerTaches();
       this.refreshCalendar();
     });
+
+    // liste des utilisateurs qui ont le calendrier ouvert en ce moment
+    this.presenceSubscription = this.webSocketService.presence$.subscribe((noms) => {
+      this.utilisateursConnectes = noms;
+    });
   }
 
   ngOnDestroy(): void {
     this.tacheEventsSubscription?.unsubscribe();
+    this.presenceSubscription?.unsubscribe();
   }
 
   reinitialiserFiltres(): void {
@@ -167,6 +175,10 @@ export class CalendrierComponent implements OnInit, OnDestroy {
         console.error('Erreur lors du chargement des services', err);
       }
     });
+  }
+
+  getInitiales(nom: string): string {
+    return nom.substring(0, 2).toUpperCase();
   }
 
   onEventClick(info: EventClickArg): void {

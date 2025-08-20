@@ -3,6 +3,7 @@ import{FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/f
 import { AuthService } from '../auth.service';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
+import { WebSocketService } from '../websocket.service';
 
 @Component({
   selector: 'app-login',
@@ -14,7 +15,7 @@ export class LoginComponent implements OnInit {
   loginForm:FormGroup;
   errorMessage: string='';
 
-  constructor(private fb: FormBuilder, private authService: AuthService, private router:Router){
+  constructor(private fb: FormBuilder, private authService: AuthService, private router:Router, private webSocketService: WebSocketService){
     this.loginForm=this.fb.group({
       mail:['',[Validators.required,Validators.email]],
       motdepasse:['',[Validators.required, Validators.minLength(6)]]
@@ -33,6 +34,7 @@ export class LoginComponent implements OnInit {
       next: (response: any)=>{
         const token= response.token;
         this.authService.saveToken(token);
+        this.webSocketService.reconnecter();
 
         const role = this.authService.getUserRole();
 

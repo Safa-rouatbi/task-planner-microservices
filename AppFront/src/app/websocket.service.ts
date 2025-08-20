@@ -6,24 +6,23 @@ import { environment } from '../environments/environment';
 
 // Connexion WebSocket au serveur pour recevoir les changements sur les taches
 // et rafraichir le calendrier sans recharger
- @Injectable({
+@Injectable({
   providedIn: 'root'
-
 })
 export class WebSocketService {
   private client: Client;
+  private estNavigateur: boolean;
   private tacheEvents = new Subject<any>();
+  private presence = new Subject<string[]>();
 
   tacheEvents$ = this.tacheEvents.asObservable();
+  presence$ = this.presence.asObservable();
 
   constructor(@Inject(PLATFORM_ID) platformId: Object) {
-    const token = isPlatformBrowser(platformId) ? localStorage.getItem('token') : null;
+    this.estNavigateur = isPlatformBrowser(platformId);
 
     this.client = new Client({
       brokerURL: environment.wsUrl,
-      connectHeaders: {
-        Authorization: token ? `Bearer ${token}` : ''
-      },
       reconnectDelay: 5000
     });
 
@@ -31,14 +30,37 @@ export class WebSocketService {
       this.client.subscribe('/topic/taches', (message) => {
         this.tacheEvents.next(JSON.parse(message.body));
       });
+
+      this.client.subscribe('/topic/presence', (message) => {
+        this.presence.next(JSON.parse(message.body));
+      });
     };
 
     this.client.onStompError = (frame) => {
       console.error('Erreur STOMP :', frame.headers['message']);
     };
 
-    // pas de WebSocket cote serveur
-    if (isPlatformBrowser(platformId)) {
+    if (this.estNavigateur) {
+      this.reconnecter();
+    }
+  }
+
+  // A appeler apres un login (ou un logout) : le token dans localStorage a
+  // change, il faut fermer l'ancienne connexion et en rouvrir une avec le
+  // token a jour, sinon on reste connecte avec l'identite de l'ancien compte.
+  reconnecter(): void {
+    if (!this.estNavigateur) {
+      return;
+    }
+
+    const token = localStorage.getItem('token');
+    this.client.connectHeaders = {
+      Authorization: token ? `Bearer ${token}` : ''
+    };
+
+    if (this.client.active) {
+      this.client.deactivate().then(() => this.client.activate());
+    } else {
       this.client.activate();
     }
   }
