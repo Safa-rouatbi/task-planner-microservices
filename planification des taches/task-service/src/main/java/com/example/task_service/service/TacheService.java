@@ -41,8 +41,17 @@ public class TacheService {
             tache.setEtat("A faire");
     }
         Tache saved = tacheRepository.save(tache);
-        messagingTemplate.convertAndSend("/topic/taches", new TacheEvent("created", toDTOWithColor(saved)));
+        envoyerEvenement(new TacheEvent("created", toDTOWithColor(saved)));
         return saved;
+    }
+
+    
+    private void envoyerEvenement(TacheEvent event) {
+        try {
+            messagingTemplate.convertAndSend("/topic/taches", event);
+        } catch (Exception e) {
+            System.err.println("Erreur envoi WebSocket : " + e.getMessage());
+        }
     }
 
     public List<Tache> getAllTaches() {
@@ -59,12 +68,12 @@ public class TacheService {
 
     public void deleteTache(Long id) {
         tacheRepository.deleteById(id);
-        messagingTemplate.convertAndSend("/topic/taches", new TacheEvent("deleted", id));
+        envoyerEvenement(new TacheEvent("deleted", id));
     }
 
     public Tache updateTache(Tache tache) {
         Tache updated = tacheRepository.save(tache);
-        messagingTemplate.convertAndSend("/topic/taches", new TacheEvent("updated", toDTOWithColor(updated)));
+        envoyerEvenement(new TacheEvent("updated", toDTOWithColor(updated)));
         return updated;
     }
     public List<Tache> rechercherTaches(Long agentId, String priorite, LocalDateTime start, LocalDateTime end, Long serviceId) {
