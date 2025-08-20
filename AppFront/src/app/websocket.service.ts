@@ -6,8 +6,9 @@ import { environment } from '../environments/environment';
 
 // Connexion WebSocket au serveur pour recevoir les changements sur les taches
 // et rafraichir le calendrier sans recharger
-@Injectable({
+ @Injectable({
   providedIn: 'root'
+
 })
 export class WebSocketService {
   private client: Client;
@@ -16,8 +17,13 @@ export class WebSocketService {
   tacheEvents$ = this.tacheEvents.asObservable();
 
   constructor(@Inject(PLATFORM_ID) platformId: Object) {
+    const token = isPlatformBrowser(platformId) ? localStorage.getItem('token') : null;
+
     this.client = new Client({
       brokerURL: environment.wsUrl,
+      connectHeaders: {
+        Authorization: token ? `Bearer ${token}` : ''
+      },
       reconnectDelay: 5000
     });
 
@@ -31,7 +37,7 @@ export class WebSocketService {
       console.error('Erreur STOMP :', frame.headers['message']);
     };
 
-    // pas de WebSocket cote serveur (SSR), on n'active que dans le navigateur
+    // pas de WebSocket cote serveur
     if (isPlatformBrowser(platformId)) {
       this.client.activate();
     }
