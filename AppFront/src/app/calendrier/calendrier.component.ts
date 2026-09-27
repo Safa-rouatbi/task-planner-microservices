@@ -1,6 +1,7 @@
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Subscription } from 'rxjs';
 import { FullCalendarModule } from '@fullcalendar/angular';
 import { CalendarOptions, EventClickArg, EventDropArg } from '@fullcalendar/core';
 import interactionPlugin from '@fullcalendar/interaction';
@@ -16,6 +17,7 @@ import { Service } from '../model/service.model';
 import { ServiceService } from '../service.service';
 import { buildCalendarEvents, markConflicts, renderEventContent, renderSlotLabelContent, renderResourceLabelContent } from '../calendar-events.util';
 import { LayoutService } from '../layout.service';
+import { WebSocketService } from '../websocket.service';
 import { SidebarFooterComponent } from '../shared/sidebar-footer/sidebar-footer.component';
 
 interface TacheExtendedProps {
@@ -34,10 +36,11 @@ interface TacheExtendedProps {
   templateUrl: './calendrier.component.html',
   styleUrls: ['./calendrier.component.css']
 })
-export class CalendrierComponent implements OnInit {
+export class CalendrierComponent implements OnInit, OnDestroy {
   modalOuvert = false;
   taches: Tache[] = [];
   services: Service[] = [];
+  private tacheEventsSubscription?: Subscription;
 
   nouvelleTache = {
     titre: '',
@@ -116,6 +119,7 @@ export class CalendrierComponent implements OnInit {
     private userService: UserService,
     private serviceService: ServiceService,
     private notification: NotificationService,
+    private webSocketService: WebSocketService,
     public layout: LayoutService
   ) {}
 
@@ -130,6 +134,16 @@ export class CalendrierComponent implements OnInit {
     this.userId = user.id;
     this.userPrenom = user.prenom;
     this.userNom = user.nom;
+
+    // quelqu'un d'autre a peut-etre cree/modifie/supprime une tache, on se remet a jour
+    this.tacheEventsSubscription = this.webSocketService.tacheEvents$.subscribe(() => {
+      this.chargerTaches();
+      this.refreshCalendar();
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.tacheEventsSubscription?.unsubscribe();
   }
 
   reinitialiserFiltres(): void {

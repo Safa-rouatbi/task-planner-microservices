@@ -3,6 +3,7 @@ package com.example.task_service.service;
 import com.example.task_service.dto.StatistiquesDTO;
 import com.example.task_service.dto.TacheDTO;
 import com.example.task_service.dto.TacheEnRetardDTO;
+import com.example.task_service.dto.TacheEvent;
 import com.example.task_service.mapper.TacheMapper;
 import com.example.task_service.model.ParametrageCouleur;
 import com.example.task_service.model.Tache;
@@ -11,6 +12,7 @@ import com.example.task_service.repository.TacheRepo;
 
 import jakarta.persistence.criteria.Predicate;
 
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -26,17 +28,30 @@ public class TacheService {
 
     private final TacheRepo tacheRepository;
     private final ParametrageColorRepository paramColorRepo;
+    private final SimpMessagingTemplate messagingTemplate;
 
-    public TacheService(TacheRepo tacheRepository, ParametrageColorRepository paramColorRepo) {
+    public TacheService(TacheRepo tacheRepository, ParametrageColorRepository paramColorRepo, SimpMessagingTemplate messagingTemplate) {
         this.tacheRepository = tacheRepository;
         this.paramColorRepo = paramColorRepo;
+        this.messagingTemplate = messagingTemplate;
     }
 
     public Tache createTache(Tache tache) {
         if (tache.getEtat() == null || tache.getEtat().isEmpty()) {
             tache.setEtat("A faire");
     }
-        return tacheRepository.save(tache);
+        Tache saved = tacheRepository.save(tache);
+        envoyerEvenement(new TacheEvent("created", toDTOWithColor(saved)));
+        return saved;
+    }
+
+    
+    private void envoyerEvenement(TacheEvent event) {
+        try {
+            messagingTemplate.convertAndSend("/topic/taches", event);
+        } catch (Exception e) {
+            System.err.println("Erreur envoi WebSocket : " + e.getMessage());
+        }
     }
 
     public List<Tache> getAllTaches() {
@@ -53,10 +68,13 @@ public class TacheService {
 
     public void deleteTache(Long id) {
         tacheRepository.deleteById(id);
+        envoyerEvenement(new TacheEvent("deleted", id));
     }
 
     public Tache updateTache(Tache tache) {
-        return tacheRepository.save(tache);
+        Tache updated = tacheRepository.save(tache);
+        envoyerEvenement(new TacheEvent("updated", toDTOWithColor(updated)));
+        return updated;
     }
     public List<Tache> rechercherTaches(Long agentId, String priorite, LocalDateTime start, LocalDateTime end, Long serviceId) {
     return tacheRepository.findAll((root, query, cb) -> {

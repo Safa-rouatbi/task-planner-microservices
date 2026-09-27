@@ -28,6 +28,7 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
         .cors(withDefaults())
         .csrf(csrf -> csrf.disable())
         .authorizeHttpRequests(auth -> auth
+            .requestMatchers("/ws/**").permitAll()
             .requestMatchers("/taches/**").authenticated()
             .anyRequest().authenticated()
 
