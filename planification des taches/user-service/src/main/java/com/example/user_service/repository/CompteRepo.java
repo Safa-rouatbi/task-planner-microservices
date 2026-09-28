@@ -9,5 +9,6 @@ import com.example.user_service.model.Compte;
 public interface CompteRepo extends JpaRepository<Compte, Long> {
     Optional<Compte> findByMail(String mail);
     List<Compte> findByService_Id(Long serviceId);
+    boolean existsByRole(String role);
 
 }

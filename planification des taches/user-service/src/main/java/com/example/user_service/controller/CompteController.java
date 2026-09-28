@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestAttribute;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -25,7 +26,10 @@ public class CompteController {
     }
 
     @PostMapping("/add")
-public ResponseEntity<String> creerAgent(@RequestBody CompteDTO dto) {
+public ResponseEntity<String> creerAgent(@RequestBody CompteDTO dto, @RequestAttribute(value = "role", required = false) String role) {
+    if (!"ADMIN".equals(role)) {
+        return ResponseEntity.status(403).body("Accès refusé");
+    }
     compteService.addCompte(dto);
     return ResponseEntity.ok("Agent créé avec succès");
 }
@@ -50,7 +54,10 @@ public ResponseEntity<List<CompteDTO>> getAll() {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Compte> updateCompte(@PathVariable Long id, @RequestBody Compte compteDetails) {
+    public ResponseEntity<?> updateCompte(@PathVariable Long id, @RequestBody Compte compteDetails, @RequestAttribute(value = "role", required = false) String role) {
+        if (!"ADMIN".equals(role)) {
+            return ResponseEntity.status(403).body("Accès refusé");
+        }
         Compte updatedCompte = compteService.update(id, compteDetails);
         if (updatedCompte == null) {
             return ResponseEntity.notFound().build();
@@ -59,7 +66,10 @@ public ResponseEntity<List<CompteDTO>> getAll() {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteCompte(@PathVariable Long id) {
+    public ResponseEntity<?> deleteCompte(@PathVariable Long id, @RequestAttribute(value = "role", required = false) String role) {
+        if (!"ADMIN".equals(role)) {
+            return ResponseEntity.status(403).body("Accès refusé");
+        }
         compteService.deleteUser(id);
         return ResponseEntity.noContent().build();
     }
@@ -72,14 +82,20 @@ public ResponseEntity<List<CompteDTO>> getAll() {
     return ResponseEntity.ok(compte);
 }
 @PutMapping("/desactiver/{id}")
-public ResponseEntity<String> desactiverCompte(@PathVariable Long id) {
+public ResponseEntity<String> desactiverCompte(@PathVariable Long id, @RequestAttribute(value = "role", required = false) String role) {
+    if (!"ADMIN".equals(role)) {
+        return ResponseEntity.status(403).body("Accès refusé");
+    }
     boolean result = compteService.setActifStatus(id, false);
     if (result) return ResponseEntity.ok("Compte désactivé.");
     else return ResponseEntity.notFound().build();
 }
 
 @PutMapping("/activer/{id}")
-public ResponseEntity<String> activerCompte(@PathVariable Long id) {
+public ResponseEntity<String> activerCompte(@PathVariable Long id, @RequestAttribute(value = "role", required = false) String role) {
+    if (!"ADMIN".equals(role)) {
+        return ResponseEntity.status(403).body("Accès refusé");
+    }
     boolean result = compteService.setActifStatus(id, true);
     if (result) return ResponseEntity.ok("Compte activé.");
     else return ResponseEntity.notFound().build();
