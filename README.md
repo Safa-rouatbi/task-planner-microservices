@@ -130,7 +130,8 @@ Une fois connecté en tant qu'admin, les autres comptes (agents, autres admins) 
 
 Deux problèmes de ceux rencontrés pendant le développement
 
-**Un utilisateur ne voyait aucune présence sur le calendrier, ni la sienne ni celle des autres.** Intermittent, difficile à reproduire. En testant avec deux navigateurs en parallèle, j'ai remarqué que ça dépendait d'un timing : le serveur envoyait la liste complète des présents *avant* que le navigateur du nouvel arrivant ait fini de s'abonner au topic WebSocket correspondant, donc il ratait complètement ce message et n'avait plus aucune liste à afficher. Solution : découper la connexion en deux étapes (enregistrement, puis envoi de la liste seulement une fois l'abonnement réellement effectif côté serveur) au lieu de tout faire au moment du CONNECT.
+**Un utilisateur ne voyait aucune présence sur le calendrier, ni la sienne ni celle des autres.**.
+ En testant avec deux navigateurs en parallèle, j'ai remarqué que ça dépendait d'un timing : le serveur envoyait la liste complète des présents *avant* que le navigateur du nouvel arrivant ait fini de s'abonner au topic WebSocket correspondant, donc il ratait complètement ce message et n'avait plus aucune liste à afficher. Solution : découper la connexion en deux étapes (enregistrement, puis envoi de la liste seulement une fois l'abonnement réellement effectif côté serveur) au lieu de tout faire au moment du CONNECT.
 
 **Une migration de base de données a échoué en ajoutant le verrouillage optimiste.** La colonne `version` devait être non nulle, mais la table `tache` avait déjà des lignes en production locale — Postgres refusait la migration. Solution : donner une valeur par défaut à la colonne (`default 0`) pour que les lignes existantes soient remplies automatiquement au lieu de bloquer.
 
