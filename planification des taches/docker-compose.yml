@@ -1,0 +1,109 @@
+﻿services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15
+    container_name: planification-postgres
+    environment:
+      POSTGRES_DB: planificationDB
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-root}
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - planification-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Authentification Service
+  authentification-service:
+    build:
+      context: ./authentification-service
+    container_name: authentification-service
+    ports:
+      - "8081:8080"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/planificationDB
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD:-root}
+      - SERVER_PORT=8080
+      - JWT_SECRET=${JWT_SECRET}
+      - USER_SERVICE_URL=http://user-service:8080
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - planification-network
+    restart: unless-stopped
+
+  # User Service
+  user-service:
+    build:
+      context: ./user-service
+    container_name: user-service
+    ports:
+      - "8082:8080"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/planificationDB
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD:-root}
+      - SERVER_PORT=8080
+      - JWT_SECRET=${JWT_SECRET}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - planification-network
+    restart: unless-stopped
+
+  # Task Service
+  task-service:
+    build:
+      context: ./task-service
+    container_name: task-service
+    ports:
+      - "8083:8080"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/planificationDB
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD:-root}
+      - SERVER_PORT=8080
+      - JWT_SECRET=${JWT_SECRET}
+      - USER_SERVICE_URL=http://user-service:8080
+      - GATEWAY_URL=http://api-gateway:8080
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - planification-network
+    restart: unless-stopped
+
+  # API Gateway
+  api-gateway:
+    build:
+      context: ./api-gateway
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - SERVER_PORT=8080
+      - AUTH_SERVICE_URL=http://authentification-service:8080
+      - USER_SERVICE_URL=http://user-service:8080
+    depends_on:
+      - authentification-service
+      - user-service
+    networks:
+      - planification-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+networks:
+  planification-network:
+    driver: bridge
