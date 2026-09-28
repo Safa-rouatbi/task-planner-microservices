@@ -1,5 +1,6 @@
 package com.example.authentification_service.service;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -9,12 +10,15 @@ import com.example.authentification_service.dto.UserDTO;
 public class UserClient {
     private final RestTemplate restTemplate;
 
+    @Value("${user.service.url}")
+    private String userServiceUrl;
+
     public UserClient(RestTemplate restTemplate) {
         this.restTemplate = restTemplate;
     }
 
     public UserDTO getUserByEmail(String email) {
-        String url = "http://localhost:8082/users/find/" + email;
+        String url = userServiceUrl + "/users/find/" + email;
         return restTemplate.getForObject(url, UserDTO.class);
     }
 }

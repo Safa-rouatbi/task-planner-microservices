@@ -13,6 +13,7 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -34,6 +35,9 @@ public class TacheExportController {
 
     private final TacheService tacheService;
     private final RestTemplate restTemplate;
+
+    @Value("${user.service.url}")
+    private String userServiceUrl;
 
     public TacheExportController(TacheService tacheService, RestTemplate restTemplate) {
         this.tacheService = tacheService;
@@ -59,7 +63,7 @@ public ResponseEntity<ByteArrayResource> exporterTaches(
         HttpEntity<String> entity = new HttpEntity<>(headers);
 
         ResponseEntity<UserDTO[]> response = restTemplate.exchange(
-            "http://localhost:8082/users/all",
+            userServiceUrl + "/users/all",
             HttpMethod.GET,
             entity,
             UserDTO[].class

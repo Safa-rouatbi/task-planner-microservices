@@ -7,6 +7,7 @@ import com.example.task_service.mapper.TacheMapper;
 import com.example.task_service.model.Tache;
 import com.example.task_service.service.TacheService;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpMethod;
@@ -26,6 +27,9 @@ public class TacheController {
 
     private final TacheService tacheService;
     private final RestTemplate restTemplate;
+
+    @Value("${gateway.url}")
+    private String gatewayUrl;
 
     public TacheController(TacheService tacheService, RestTemplate restTemplate) {
         this.tacheService = tacheService;
@@ -65,7 +69,7 @@ public class TacheController {
         // si c'est pas un admin je verifie que l'utilisateur est dans le service
         if (serviceId != null && !role.equals("ADMIN")) {
             try {
-                String url = "http://localhost:8080/api/users/by-service/" + serviceId;
+                String url = gatewayUrl + "/api/users/by-service/" + serviceId;
                 ResponseEntity<List<CompteDTO>> response = restTemplate.exchange(url, HttpMethod.GET, null, new ParameterizedTypeReference<List<CompteDTO>>() {});
                 List<CompteDTO> agents = response.getBody();
 

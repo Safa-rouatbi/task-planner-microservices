@@ -1,0 +1,9 @@
+# Visual Studio Code
+.vscode/
+
+# Logs de dev/crash locaux
+*.log
+hs_err_pid*.log
+
+# Secrets locaux 
+.env
